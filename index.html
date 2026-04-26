@@ -992,7 +992,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v2.8";
+const APP_VERSION = "v2.9";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1150,6 +1150,13 @@ async function valorise(p) {
       prixActuel = eurParGramme; devCote = "EUR/g";
       valEur = eurParGramme * p.quantite;
       coutEur = p.prix_achat * p.quantite;
+      // Estimation revente Godot & Fils (cours rachat avec marge)
+      // Lingots : décote ~5% sur le spot (rachat Godot moins cher que cours mondial)
+      // Napoléons : décote ~3% (prime numismatique, meilleure liquidité revente)
+      const decoteGodot = p.or_type === "napoleon" ? 0.97 : 0.95;
+      var valGodot = valEur * decoteGodot;
+      var pvGodot = valGodot - coutEur;
+      var pvGodotPct = coutEur ? (pvGodot / coutEur * 100) : 0;
     } else if (q.currency === "EUR") {
       valEur = q.price * p.quantite;
       coutEur = p.prix_achat * p.quantite;
@@ -1165,7 +1172,8 @@ async function valorise(p) {
     const pvPct = coutEur ? (pv / coutEur * 100) : 0;
     return { ...p, prix_actuel: prixActuel, valeur_eur: valEur, cout_eur: coutEur,
       pv_eur: pv, pv_pct: pvPct, change_pct_jour: q.change_pct,
-      devise_cotation: devCote, name };
+      devise_cotation: devCote, name,
+      ...(typeof valGodot !== "undefined" ? { valeur_godot: valGodot, pv_godot: pvGodot, pv_godot_pct: pvGodotPct } : {}) };
   } catch (e) {
     return { ...p, error: e.message };
   }
@@ -1254,6 +1262,11 @@ function renderPositions(valos) {
         <div style="text-align:right;">
           <div class="pos-value">${fmt.eur(p.valeur_eur)}</div>
           <div class="pos-pv ${cls(p.pv_eur)}">${(p.pv_eur >= 0 ? "+" : "")}${fmt.eur(p.pv_eur)} (${fmt.pct(p.pv_pct)})</div>
+          ${p.valeur_godot != null ? `<div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.4;border-top:1px dashed var(--border);padding-top:3px;">
+            <strong style="color:var(--text);">Revente Godot</strong><br>
+            ${fmt.eur(p.valeur_godot)}<br>
+            <span class="${cls(p.pv_godot)}">${p.pv_godot >= 0 ? "+" : ""}${fmt.eur(p.pv_godot)} (${fmt.pct(p.pv_godot_pct)})</span>
+          </div>` : ""}
         </div>
       </div>
       ${p.details ? `<div style="font-size:11px;color:var(--accent);background:var(--bg-4);padding:4px 8px;border-radius:4px;margin-top:4px;display:inline-block;">📦 ${p.details.nb_unites} × ${p.details.type_unite} (= ${fmt.num(p.quantite, 2)} g)</div>` : ""}
