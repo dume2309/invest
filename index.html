@@ -243,6 +243,31 @@
   .moment-card .moment-text { color: var(--text); font-size: 13px; flex: 1; }
   .moment-card .moment-text strong { font-size: 14px; }
 
+  /* --- Propositions d'achat --- */
+  .propos-card {
+    background: linear-gradient(135deg, rgba(212,175,55,0.10), rgba(38,208,124,0.06));
+    border: 1.5px solid var(--accent); border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 12px;
+  }
+  .propos-title {
+    font-size: 13px; font-weight: 700; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+  }
+  .propos-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; background: var(--bg-3); border-radius: 8px;
+    margin-bottom: 6px; gap: 10px;
+  }
+  .propos-info { flex: 1; min-width: 0; }
+  .propos-ticker { font-weight: 700; color: var(--accent); font-size: 14px; }
+  .propos-desc { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+  .propos-amount { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--green); margin-right: 8px; }
+  .propos-btn {
+    background: var(--green); color: #000; padding: 6px 12px; border-radius: 6px;
+    font-size: 12px; font-weight: 600; min-height: 30px; white-space: nowrap;
+  }
+  .propos-btn:active { background: #1ea863; }
+
   /* --- Conseils --- */
   .conseil {
     padding: 12px 14px; border-radius: 10px; margin-bottom: 8px;
@@ -346,6 +371,7 @@
   <div class="tab" data-tab="alerts" onclick="openTab('alerts')">Alertes</div>
   <div class="tab" data-tab="watchlist" onclick="openTab('watchlist')">Watchlist</div>
   <div class="tab" data-tab="conseils" onclick="openTab('conseils')">💡 Conseils</div>
+  <div class="tab" data-tab="aide" onclick="openTab('aide')">❓ Aide</div>
   <div class="tab" data-tab="settings" onclick="openTab('settings')">Réglages</div>
 </div>
 
@@ -355,6 +381,7 @@
   <section id="tab-portfolio">
     <div id="rappelZone"></div>
     <div id="momentZone"></div>
+    <div id="propositionsZone"></div>
     <div class="card">
       <h2>
         Positions
@@ -444,6 +471,76 @@
         <strong style="color:var(--text);">Ce ne sont pas des recommandations financières professionnelles.</strong>
         Vérifie toujours toi-même avant d'acheter/vendre, et n'investis que ce que tu peux te permettre de perdre.
       </p>
+    </div>
+  </section>
+
+  <!-- AIDE -->
+  <section id="tab-aide" class="hidden">
+    <div class="card">
+      <h2>❓ Comment marche cette appli ?</h2>
+      <div style="font-size:13px;line-height:1.7;color:var(--text);">
+        <p><strong style="color:var(--accent);">L'appli est ton tableau de bord ET ton coach perso.</strong> Elle ne se connecte PAS à ton compte Crédit Agricole (impossible techniquement, les banques bloquent ça). Donc <strong>tu fais tes achats sur le CA, puis tu les saisis ici en 5 secondes</strong>.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🚀 Routine mensuelle (en 3 étapes)</h2>
+      <div style="font-size:13px;line-height:1.7;">
+        <p><strong>1.</strong> Ouvre l'onglet <strong>Positions</strong>. En haut tu vois :</p>
+        <ul style="color:var(--muted);padding-left:20px;">
+          <li>🟢🟡🔴 <strong>Conseil du moment</strong> : si le marché est calme, en repli (bon moment) ou tendu (patiente)</li>
+          <li>📋 <strong>Propositions du mois</strong> : ce que je te conseille d'acheter avec ton budget habituel</li>
+        </ul>
+        <p><strong>2.</strong> Tu vas sur ton compte CA ETF, tu achètes ce qu'on a décidé (ex. 200 € de CW8.PA)</p>
+        <p><strong>3.</strong> Tu reviens dans l'app, clic sur <strong>💰 J'ai fait</strong> en face de la ligne, tu vérifies que le montant correspond, tu valides. Fini.</p>
+        <p style="color:var(--green);font-weight:600;">⏱ Total : 5 secondes par mois.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🗂 À quoi sert chaque onglet</h2>
+      <div style="font-size:13px;line-height:1.7;">
+        <p><strong style="color:var(--accent);">Positions</strong> — ce que tu possèdes, valorisé en temps réel + propositions d'achat du mois</p>
+        <p><strong style="color:var(--accent);">Graphiques</strong> — répartition de ton portefeuille (donut) + évolution historique (courbe)</p>
+        <p><strong style="color:var(--accent);">Alertes</strong> — tu fixes des seuils (ex. "préviens si NVDA tombe sous 100 USD")</p>
+        <p><strong style="color:var(--accent);">Watchlist</strong> — actions/ETF que tu surveilles sans avoir acheté (NVDA, RKLB déjà préchargés avec mon avis)</p>
+        <p><strong style="color:var(--accent);">💡 Conseils</strong> — diagnostic complet : risque global, allocation vs cible, opportunités, rappels fiscaux PEA/Or</p>
+        <p><strong style="color:var(--accent);">⚙️ Réglages</strong> — token GitHub (sync entre PC/iPad/iPhone), exports, forçage MAJ, version</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📐 Ta stratégie en résumé</h2>
+      <div style="font-size:13px;line-height:1.7;color:var(--text);">
+        <p><strong>Profil :</strong> prudent, débutant, achats 100% manuels (jamais de virement auto)</p>
+        <p><strong>Budget :</strong> 100 € de démarrage + 200-500 €/mois (parfois 0 €)</p>
+        <p><strong>Phases d'évolution du portefeuille :</strong></p>
+        <ul style="color:var(--muted);padding-left:20px;">
+          <li><strong>Phase 1 (0 → 1 500 €) :</strong> 100% CW8.PA (Amundi MSCI World, le plus diversifié)</li>
+          <li><strong>Phase 2 (1 500 → 5 000 €) :</strong> 70% CW8 + 30% 500.PA (S&P 500)</li>
+          <li><strong>Phase 3 (5 000 → 10 000 €) :</strong> 60% CW8 + 25% 500.PA + 15% AASI.PA (Asie)</li>
+          <li><strong>Phase 4 (10 000+ €) :</strong> on ajoute NVDA (5%), RKLB (2%) et or physique (12%)</li>
+        </ul>
+        <p>L'appli détecte automatiquement ta phase actuelle et adapte les propositions.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔄 Synchronisation entre appareils</h2>
+      <div style="font-size:13px;line-height:1.7;">
+        <p>Tes données sont stockées <strong>en local sur chaque appareil</strong> (PC, iPad, iPhone) ET synchronisées via GitHub (repo privé <code style="background:var(--bg-3);padding:2px 5px;border-radius:4px;font-size:11px;">invest-data</code>).</p>
+        <p>À chaque modification, l'app push automatiquement sur GitHub. À chaque ouverture, elle pull pour récupérer les modifs faites depuis un autre appareil.</p>
+        <p>Tu vois la pastille <span class="sync-dot ok"></span> verte en haut à droite quand tout va bien, jaune pendant un sync, rouge si erreur.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⚠️ Limites à connaître</h2>
+      <div style="font-size:13px;line-height:1.7;">
+        <p>• <strong>Pas de connexion auto au CA</strong> (les banques FR n'autorisent pas)</p>
+        <p>• <strong>Cours mis à jour à la demande</strong> (bouton ↻ ou auto toutes les 5 min en foreground), pas en streaming temps réel</p>
+        <p>• <strong>Conseils générés par règles</strong> (allocation, MM50/MM200, volatilité) — pas par IA, pas par un conseiller financier humain. À utiliser comme aide à la décision, pas comme parole d'évangile.</p>
+      </div>
     </div>
   </section>
 
@@ -689,7 +786,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v1.2";
+const APP_VERSION = "v1.3";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -885,6 +982,7 @@ async function refreshAll() {
     await loadHistory();
     renderRappel();
     renderMoment();  // async, fire and forget
+    renderPropositions();
     $("syncTime").textContent = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
     dot.className = "sync-dot ok";
   } catch (e) {
@@ -1489,6 +1587,107 @@ async function forceUpdate() {
   }
   toast("Cache vidé, rechargement…");
   setTimeout(() => location.reload(), 800);
+}
+
+// ============================================================================
+// PROPOSITIONS D'ACHAT AUTO (basées sur phase + budget mensuel typique)
+// ============================================================================
+const BUDGET_MENSUEL_TYPIQUE = 250; // budget moyen utilisateur (200-500 €)
+
+function getPhase(totalEur) {
+  if (totalEur < 100) return 0;       // démarrage
+  if (totalEur < 1500) return 1;      // 100% CW8
+  if (totalEur < 5000) return 2;      // 70% CW8 + 30% 500.PA
+  if (totalEur < 10000) return 3;     // 60% CW8 + 25% 500.PA + 15% AASI
+  return 4;                           // + NVDA 5% + RKLB 2% + Or 12%
+}
+
+async function renderPropositions() {
+  const el = $("propositionsZone"); if (!el) return;
+
+  // Calcul total portefeuille
+  let total = 0;
+  for (const p of D.positions) {
+    try {
+      const q = await getQuote(p.ticker);
+      if (p.type === "Or" && p.ticker === "GC=F") {
+        const eurusd = await getEurUsd();
+        total += (q.price / 31.1035 / eurusd) * p.quantite;
+      } else if (q.currency === "USD") {
+        const eurusd = await getEurUsd();
+        total += (q.price * p.quantite) / eurusd;
+      } else { total += q.price * p.quantite; }
+    } catch {}
+  }
+  const phase = getPhase(total);
+
+  // Construction des propositions selon la phase
+  const props = [];
+  if (phase === 0) {
+    props.push({
+      ticker: "CW8.PA", montant: 100,
+      desc: "1er achat — démarre avec 100 € sur l'ETF World, le plus diversifié (1 600 entreprises)"
+    });
+  } else if (phase === 1) {
+    props.push({
+      ticker: "CW8.PA", montant: BUDGET_MENSUEL_TYPIQUE,
+      desc: `Continue à 100% sur CW8.PA jusqu'à ~1 500 € (tu es à ${fmt.eur(total)}). Pas besoin de diversifier maintenant.`
+    });
+  } else if (phase === 2) {
+    const cw8Cible = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.7);
+    const sp500Cible = BUDGET_MENSUEL_TYPIQUE - cw8Cible;
+    props.push({ ticker: "CW8.PA", montant: cw8Cible, desc: "70% du DCA mensuel — socle mondial" });
+    props.push({ ticker: "500.PA", montant: sp500Cible, desc: "30% du DCA mensuel — renforcement US" });
+  } else if (phase === 3) {
+    const cw8 = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.6);
+    const sp = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.25);
+    const asia = BUDGET_MENSUEL_TYPIQUE - cw8 - sp;
+    props.push({ ticker: "CW8.PA", montant: cw8, desc: "60% — socle mondial" });
+    props.push({ ticker: "500.PA", montant: sp, desc: "25% — moteur US" });
+    props.push({ ticker: "AASI.PA", montant: asia, desc: "15% — Asie émergente (Inde, Chine, Corée)" });
+  } else {
+    const cw8 = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.50);
+    const sp = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.22);
+    const asia = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.08);
+    const nvda = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.06);
+    const rklb = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.02);
+    const or = BUDGET_MENSUEL_TYPIQUE - cw8 - sp - asia - nvda - rklb;
+    props.push({ ticker: "CW8.PA", montant: cw8, desc: "Socle mondial" });
+    props.push({ ticker: "500.PA", montant: sp, desc: "Renforcement US" });
+    props.push({ ticker: "AASI.PA", montant: asia, desc: "Asie émergente" });
+    props.push({ ticker: "NVDA", montant: nvda, desc: "IA via leader large cap (CTO requis)" });
+    props.push({ ticker: "RKLB", montant: rklb, desc: "Pari spatial petite ligne (CTO requis)" });
+    if (or > 0) props.push({ ticker: "GC=F", montant: or, desc: `Or physique chez Godot (~${(or/115).toFixed(1)} g)` });
+  }
+
+  const phaseLabels = ["Démarrage", "Phase 1 — socle CW8", "Phase 2 — CW8 + S&P 500", "Phase 3 — + Asie", "Phase 4 — diversification complète"];
+  const phaseLabel = phaseLabels[phase];
+
+  el.innerHTML = `<div class="propos-card">
+    <div class="propos-title">📋 Propositions du mois — ${phaseLabel}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">
+      Si tu mets <strong style="color:var(--text);">${fmt.eur(BUDGET_MENSUEL_TYPIQUE)} ce mois</strong>${total > 0 ? ` (portefeuille actuel : ${fmt.eur(total)})` : ""}, voici ce que je te conseille de faire. Clique sur 💰 pour saisir l'achat directement.
+    </div>
+    ${props.map(p => `<div class="propos-line">
+      <div class="propos-info">
+        <div class="propos-ticker">${p.ticker}</div>
+        <div class="propos-desc">${p.desc}</div>
+      </div>
+      <span class="propos-amount">${fmt.eur(p.montant)}</span>
+      <button class="propos-btn" onclick="proposExecute('${p.ticker}', ${p.montant})">💰 J'ai fait</button>
+    </div>`).join("")}
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">
+      💡 Tu peux ajuster les montants (modifier ${fmt.eur(BUDGET_MENSUEL_TYPIQUE)} dans Réglages bientôt) ou cliquer "💰 J'ai fait" et changer la valeur dans la modale.
+    </div>
+  </div>`;
+}
+
+function proposExecute(ticker, montant) {
+  openExpressModal();
+  $("x_ticker").value = ticker;
+  toggleExpressFields();
+  $("x_montant").value = montant;
+  expressPreview();
 }
 
 // ============================================================================
