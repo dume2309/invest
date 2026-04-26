@@ -268,6 +268,68 @@
   }
   .propos-btn:active { background: #1ea863; }
 
+  /* --- Niveau --- */
+  .niveau-badge {
+    display: inline-block; padding: 6px 16px; border-radius: 20px;
+    font-size: 14px; font-weight: 700; letter-spacing: 0.5px;
+    background: var(--accent); color: #000;
+  }
+  .niveau-progress {
+    background: var(--bg-3); height: 8px; border-radius: 4px; overflow: hidden;
+    margin: 12px 0 6px 0;
+  }
+  .niveau-progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--green), var(--accent));
+    border-radius: 4px; transition: width 0.5s;
+  }
+  .achievement {
+    padding: 10px 12px; background: var(--bg-3); border-radius: 8px;
+    margin-bottom: 6px; display: flex; align-items: center; gap: 12px;
+  }
+  .achievement.done { border-left: 3px solid var(--green); background: rgba(38,208,124,0.06); }
+  .achievement.todo { border-left: 3px solid var(--bg-4); opacity: 0.7; }
+  .achievement.next { border-left: 3px solid var(--accent); background: rgba(212,175,55,0.06); }
+  .achievement-emoji { font-size: 22px; }
+  .achievement-text { flex: 1; font-size: 13px; }
+  .achievement-title { font-weight: 600; margin-bottom: 2px; }
+  .achievement-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
+  .achievement-status {
+    font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .achievement-status.ok { background: var(--green); color: #000; }
+  .achievement-status.next { background: var(--accent); color: #000; }
+  .achievement-status.todo { background: var(--bg-4); color: var(--muted); }
+
+  /* --- Alertes auto --- */
+  .alerte-auto {
+    padding: 12px 14px; border-radius: 10px; margin-bottom: 8px;
+    border-left: 4px solid;
+  }
+  .alerte-auto.urgent { background: rgba(239,79,79,0.10); border-color: var(--red); }
+  .alerte-auto.attention { background: rgba(212,175,55,0.10); border-color: var(--accent); }
+  .alerte-auto.opportunite { background: rgba(38,208,124,0.10); border-color: var(--green); }
+  .alerte-auto.info { background: var(--bg-3); border-color: var(--blue); }
+  .alerte-auto-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .alerte-auto-emoji { font-size: 20px; }
+  .alerte-auto-title { font-weight: 700; font-size: 14px; flex: 1; }
+  .alerte-auto-tag {
+    font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .alerte-auto-tag.urgent { background: var(--red); color: #fff; }
+  .alerte-auto-tag.attention { background: var(--accent); color: #000; }
+  .alerte-auto-tag.opportunite { background: var(--green); color: #000; }
+  .alerte-auto-tag.info { background: var(--blue); color: #fff; }
+  .alerte-auto-body { font-size: 12px; color: var(--text); line-height: 1.5; }
+  .alerte-auto-action {
+    margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .alerte-auto-action button { padding: 5px 10px; font-size: 11px; min-height: 28px; }
+
   /* --- Conseils --- */
   .conseil {
     padding: 12px 14px; border-radius: 10px; margin-bottom: 8px;
@@ -368,9 +430,10 @@
 <div class="tabs">
   <div class="tab active" data-tab="portfolio" onclick="openTab('portfolio')">Positions</div>
   <div class="tab" data-tab="charts" onclick="openTab('charts')">Graphiques</div>
-  <div class="tab" data-tab="alerts" onclick="openTab('alerts')">Alertes</div>
+  <div class="tab" data-tab="alerts" onclick="openTab('alerts')">🔔 Alertes</div>
   <div class="tab" data-tab="watchlist" onclick="openTab('watchlist')">Watchlist</div>
   <div class="tab" data-tab="conseils" onclick="openTab('conseils')">💡 Conseils</div>
+  <div class="tab" data-tab="niveau" onclick="openTab('niveau')">📊 Niveau</div>
   <div class="tab" data-tab="aide" onclick="openTab('aide')">❓ Aide</div>
   <div class="tab" data-tab="settings" onclick="openTab('settings')">Réglages</div>
 </div>
@@ -423,11 +486,18 @@
   <!-- ALERTS -->
   <section id="tab-alerts" class="hidden">
     <div class="card">
+      <h2>🔔 Alertes auto <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">générées par le coach à partir de ton portefeuille + watchlist + marché</span></h2>
+      <div id="alertsAutoList"><div class="empty"><span class="loader"></span> Analyse en cours…</div></div>
+    </div>
+    <div class="card">
       <h2>
-        Alertes prix
-        <button class="primary" onclick="openAlertModal()" style="padding:6px 12px;font-size:12px;min-height:30px;">+ Alerte</button>
+        Alertes perso (avancé)
+        <button class="ghost" onclick="openAlertModal()" style="padding:4px 10px;font-size:11px;min-height:26px;">+ Ajouter</button>
       </h2>
-      <div id="alertsList"><div class="empty">Aucune alerte.</div></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5;">
+        Si tu veux fixer toi-même un seuil précis (ex. "alerte si NVDA passe sous 100 USD"), tu peux. Sinon les alertes auto au-dessus suffisent.
+      </div>
+      <div id="alertsList"><div class="empty">Aucune alerte personnelle.</div></div>
     </div>
   </section>
 
@@ -471,6 +541,30 @@
         <strong style="color:var(--text);">Ce ne sont pas des recommandations financières professionnelles.</strong>
         Vérifie toujours toi-même avant d'acheter/vendre, et n'investis que ce que tu peux te permettre de perdre.
       </p>
+    </div>
+  </section>
+
+  <!-- NIVEAU / APPRENTISSAGE -->
+  <section id="tab-niveau" class="hidden">
+    <div class="card" style="background:linear-gradient(135deg,rgba(212,175,55,0.10),rgba(79,140,255,0.06));border-color:rgba(212,175,55,0.4);">
+      <h2 style="color:var(--accent);">📊 Ton parcours d'investisseur</h2>
+      <div id="niveauHero"><div class="empty"><span class="loader"></span> Calcul…</div></div>
+    </div>
+    <div class="card">
+      <h2>🏆 Ce que tu as déjà acquis</h2>
+      <div id="niveauAcquis"></div>
+    </div>
+    <div class="card">
+      <h2>🎯 Tes prochaines étapes</h2>
+      <div id="niveauProchaines"></div>
+    </div>
+    <div class="card">
+      <h2>📚 À apprendre / comprendre</h2>
+      <div id="niveauApprendre"></div>
+    </div>
+    <div class="card">
+      <h2>📈 Stats de progression</h2>
+      <div id="niveauStats"></div>
     </div>
   </section>
 
@@ -786,7 +880,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v1.3";
+const APP_VERSION = "v1.4";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1093,28 +1187,62 @@ async function renderWatchlist() {
     el.innerHTML = '<div class="empty">Watchlist vide.</div>'; return;
   }
   const items = await Promise.all(D.watchlist.map(async (w) => {
-    try { return { ...w, q: await getQuote(w.ticker) }; }
-    catch (e) { return { ...w, err: e.message }; }
+    try {
+      const q = await getQuote(w.ticker);
+      const hist = await fetchYahooHistory(w.ticker, "1y");
+      const closes = hist.map(d => d.close);
+      const m50 = ma(closes, 50);
+      const m200 = ma(closes, 200);
+      const gap200 = m200 ? (q.price - m200) / m200 * 100 : 0;
+      const var1m = closes.length > 21 ? (q.price / closes[closes.length - 22] - 1) * 100 : 0;
+      // Score opportunité (1-5)
+      let score, label, color;
+      const avis = AVIS_FONDAMENTAL[w.ticker];
+      if (avis && (avis.verdict.startsWith("ÉCARTER") || avis.verdict.startsWith("ÉVITER"))) {
+        score = 1; label = "❌ Écarter"; color = "var(--red)";
+      } else if (gap200 < -15 && m50 > m200 * 0.95) {
+        score = 5; label = "🔥 Opportunité maintenant"; color = "var(--green)";
+      } else if (gap200 < -5 && m50 > m200) {
+        score = 4; label = "🟢 Bon moment"; color = "var(--green)";
+      } else if (gap200 > 25 || var1m > 20) {
+        score = 2; label = "⚠️ Surchauffe — attendre"; color = "var(--accent)";
+      } else if (m50 < m200 && gap200 < -10) {
+        score = 2; label = "📉 Tendance baissière"; color = "var(--accent)";
+      } else {
+        score = 3; label = "🟡 Surveiller"; color = "var(--muted)";
+      }
+      return { ...w, q, score, label, color, gap200, var1m };
+    } catch (e) { return { ...w, err: e.message }; }
   }));
-  el.innerHTML = items.map(w => `
-    <div class="pos-item">
+  // Tri par score décroissant
+  items.sort((a, b) => (b.score || 0) - (a.score || 0));
+  el.innerHTML = items.map(w => {
+    if (w.err) return `<div class="pos-item"><div class="pos-row"><span class="pos-ticker">${w.ticker}</span><span style="color:var(--red);">⚠ ${w.err}</span></div></div>`;
+    const r = riskOf(w.ticker, "Action");
+    return `<div class="pos-item">
       <div class="pos-row">
         <div>
           <span class="pos-ticker">${w.ticker}</span>
-          <div class="pos-name">${w.nom || w.q?.name || ""}</div>
+          ${riskPill(r)}
+          <div class="pos-name">${w.nom || w.q.name || ""}</div>
         </div>
         <div style="text-align:right;">
-          ${w.err ? `<div style="color:var(--red);font-size:12px;">⚠</div>` :
-          `<div class="pos-value">${fmt.num(w.q.price, 2)} ${w.q.currency}</div>
-           <div class="pos-pv ${cls(w.q.change_pct)}">${fmt.pct(w.q.change_pct)}</div>`}
+          <div class="pos-value">${fmt.num(w.q.price, 2)} ${w.q.currency}</div>
+          <div class="pos-pv ${cls(w.q.change_pct)}">${fmt.pct(w.q.change_pct)}</div>
         </div>
+      </div>
+      <div style="margin-top:6px;padding:6px 8px;background:var(--bg-4);border-radius:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="color:${w.color};font-weight:700;font-size:12px;">${w.label}</span>
+        <span style="font-size:11px;color:var(--muted);">${w.gap200 != null ? `${w.gap200 >= 0 ? "+" : ""}${w.gap200.toFixed(1)}% vs MM200` : ""} · 1m ${w.var1m >= 0 ? "+" : ""}${w.var1m.toFixed(1)}%</span>
       </div>
       <div class="pos-meta">
         <span>${w.secteur || ""}</span>
         <span style="flex:1;">${w.note || ""}</span>
+        ${w.score >= 4 ? `<button class="primary" onclick="proposExecute('${w.ticker}', ${BUDGET_MENSUEL_TYPIQUE / 4 | 0})" style="padding:4px 10px;font-size:11px;min-height:26px;">💰 J'ai acheté</button>` : ""}
         <button class="danger" onclick="delWatchlist('${w.id}')" style="padding:0;">×</button>
       </div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
 
 // --- Charts ---
@@ -1399,9 +1527,12 @@ function closeModal(id) { $(id).classList.remove("active"); }
 // ============================================================================
 function openTab(name) {
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
-  ["portfolio","charts","alerts","watchlist","settings"].forEach(s =>
+  ["portfolio","charts","alerts","watchlist","conseils","niveau","aide","settings"].forEach(s =>
     $("tab-" + s).classList.toggle("hidden", s !== name));
-  if (name === "charts") { loadHistory(); }
+  if (name === "charts") loadHistory();
+  if (name === "alerts") renderAlertsAuto();
+  if (name === "niveau") renderNiveau();
+  if (name === "conseils") renderConseils();
 }
 
 // ============================================================================
@@ -1587,6 +1718,290 @@ async function forceUpdate() {
   }
   toast("Cache vidé, rechargement…");
   setTimeout(() => location.reload(), 800);
+}
+
+// ============================================================================
+// ALERTES AUTOMATIQUES — coach proactif
+// ============================================================================
+async function generateAutoAlerts() {
+  const alerts = []; // {kind, emoji, title, body, ticker?, action?}
+
+  // Valoriser positions
+  const valos = await Promise.all(D.positions.map(valorise));
+  const valids = valos.filter(p => !p.error);
+  const total = valids.reduce((s, p) => s + p.valeur_eur, 0);
+
+  // 1. POSITIONS — PV trop élevée (prise de bénéfices)
+  for (const p of valids) {
+    if (p.type === "Action" && p.pv_pct > 40) {
+      alerts.push({
+        kind: "attention", emoji: "💰", priority: 2,
+        title: `${p.ticker} : +${p.pv_pct.toFixed(0)}% — envisage prise de bénéfices`,
+        body: `Tu as une belle plus-value de <strong>+${fmt.eur(p.pv_eur)}</strong> sur ${p.ticker}. Sur une action individuelle, sécuriser <strong>25 à 30% des gains</strong> est sage : tu réduis le risque sans sortir complètement. Garde le reste pour la suite.`,
+      });
+    }
+    // 2. POSITIONS — Perte importante (à surveiller)
+    if (p.pv_pct < -25) {
+      alerts.push({
+        kind: "urgent", emoji: "⚠️", priority: 1,
+        title: `${p.ticker} : ${p.pv_pct.toFixed(0)}% — à surveiller`,
+        body: `Forte baisse sur ${p.ticker} (${fmt.eur(p.pv_eur)}). <strong>Ne panique pas</strong>. ${p.type === "ETF" ? `Un ETF qui baisse n'est pas grave — au contraire, c'est une <strong>opportunité de DCA</strong>. Continue à acheter régulièrement, le marché remonte historiquement.` : `Vérifie si la thèse de l'entreprise a changé (news, résultats, gouvernance). Si oui : coupe la perte. Si non : DCA possible si tu y crois encore. Si tu as un doute : ne fais rien, attends que ta tête soit froide.`}`,
+      });
+    }
+    // 3. POSITIONS — Concentration excessive
+    if (total > 0) {
+      const part = p.valeur_eur / total * 100;
+      const risk = riskOf(p.ticker, p.type);
+      const seuil = risk >= 4 ? 5 : risk === 3 ? 8 : 25;
+      if (part > seuil && p.type === "Action") {
+        alerts.push({
+          kind: "attention", emoji: "🎯", priority: 2,
+          title: `${p.ticker} pèse ${part.toFixed(0)}% du portefeuille (limite prudente : ${seuil}%)`,
+          body: `Tu es trop concentré sur ${p.ticker}. <strong>Allège progressivement</strong> ou laisse les ETF diluer en renforçant le socle CW8.PA. Risque ${RISK_LABEL[risk]} (${risk}/5).`,
+        });
+      }
+    }
+  }
+
+  // 4. WATCHLIST — opportunités d'achat
+  for (const w of D.watchlist) {
+    try {
+      const q = await getQuote(w.ticker);
+      const hist = await fetchYahooHistory(w.ticker, "1y");
+      const closes = hist.map(d => d.close);
+      const m50 = ma(closes, 50);
+      const m200 = ma(closes, 200);
+      const gap200 = m200 ? (q.price - m200) / m200 * 100 : null;
+      const var1m = closes.length > 21 ? (q.price / closes[closes.length - 22] - 1) * 100 : null;
+      const avis = AVIS_FONDAMENTAL[w.ticker];
+      // Opportunité d'achat : repli marqué sur titre en tendance haussière
+      if (gap200 != null && gap200 < -15 && m50 && m200 && m50 > m200 * 0.95
+          && avis && !avis.verdict.startsWith("ÉCARTER") && !avis.verdict.startsWith("ÉVITER")) {
+        alerts.push({
+          kind: "opportunite", emoji: "🟢", priority: 3, ticker: w.ticker,
+          title: `${w.ticker} en repli ${gap200.toFixed(0)}% : fenêtre d'achat`,
+          body: `${w.nom || q.name} affiche un repli marqué tout en restant en tendance haussière long terme. <strong>Configuration d'achat intéressante.</strong><br>📌 <strong>${avis.verdict}</strong> · Taille : <strong>${avis.taille}</strong>.`,
+          action: { label: `💰 J'ai acheté ${w.ticker}`, ticker: w.ticker },
+        });
+      }
+      // Évolution forte récente : alerte attention
+      if (var1m != null && var1m > 20) {
+        alerts.push({
+          kind: "info", emoji: "🚀", priority: 4,
+          title: `${w.ticker} +${var1m.toFixed(0)}% sur 1 mois`,
+          body: `Forte hausse récente de ${w.nom || w.ticker}. <strong>Surveille mais ne te précipite pas</strong> — souvent ça consolide après un tel mouvement. Mieux vaut attendre un repli.`,
+        });
+      }
+      if (var1m != null && var1m < -15) {
+        alerts.push({
+          kind: "info", emoji: "📉", priority: 4,
+          title: `${w.ticker} ${var1m.toFixed(0)}% sur 1 mois`,
+          body: `Forte baisse de ${w.nom || w.ticker}. ${avis && avis.verdict.startsWith("ÉCARTER") ? `<strong>Confirme qu'il faut écarter</strong> : ${avis.rationale}` : `Vérifie si la thèse a changé (news, résultats). Possible opportunité d'achat <strong>si tu y crois encore</strong> et si la tendance long terme reste haussière.`}`,
+        });
+      }
+    } catch {}
+  }
+
+  // 5. MARCHÉ GLOBAL — repli ou surchauffe
+  try {
+    const q = await getQuote("CW8.PA");
+    const hist = await fetchYahooHistory("CW8.PA", "6mo");
+    const closes = hist.map(d => d.close);
+    const var1m = closes.length > 21 ? (q.price / closes[closes.length - 22] - 1) * 100 : 0;
+    if (var1m < -8) {
+      alerts.push({
+        kind: "opportunite", emoji: "🌍", priority: 3,
+        title: `Marché mondial en repli de ${var1m.toFixed(1)}% sur 1 mois`,
+        body: `<strong>C'est une fenêtre d'achat</strong>. Les actions sont en solde. Si ton budget le permet, <strong>double ton DCA habituel ce mois</strong> (ex. 400-500 € au lieu de 200). Le marché remonte historiquement après ces phases.`,
+        action: { label: "💰 Je renforce CW8.PA", ticker: "CW8.PA" },
+      });
+    }
+    if (var1m > 12) {
+      alerts.push({
+        kind: "attention", emoji: "🌡️", priority: 2,
+        title: `Marché mondial +${var1m.toFixed(1)}% sur 1 mois — surchauffe`,
+        body: `Forte hausse récente. <strong>Pas le moment de mettre un gros montant</strong>. Garde un montant DCA réduit (100-150 €) ou attends 1-2 semaines un repli. <strong>Ne vends pas pour autant</strong> — tu n'es pas un trader.`,
+      });
+    }
+  } catch {}
+
+  // 6. INFO — pas encore de position (1er achat)
+  if (D.positions.length === 0) {
+    alerts.push({
+      kind: "info", emoji: "🌱", priority: 5,
+      title: "Tu n'as pas encore commencé",
+      body: `Premier achat recommandé : <strong>100 € de CW8.PA</strong> (Amundi MSCI World). Ouvre l'onglet Positions et clique 💰 J'ai acheté quand c'est fait.`,
+      action: { label: "💰 Premier achat 100 € CW8.PA", ticker: "CW8.PA", montant: 100 },
+    });
+  }
+
+  // 7. INFO — pas d'achat depuis longtemps
+  const dates = D.positions.map(p => p.date_achat).filter(Boolean).sort();
+  if (dates.length) {
+    const lastTs = new Date(dates[dates.length - 1]).getTime();
+    const days = Math.floor((Date.now() - lastTs) / 86400000);
+    if (days >= 35) {
+      alerts.push({
+        kind: "info", emoji: "📅", priority: 5,
+        title: `Dernier achat il y a ${days} jours`,
+        body: `Pas d'obligation, mais le DCA mensuel régulier est la stratégie qui marche le mieux long terme. Si ton budget le permet, vois les <strong>Propositions du mois</strong> dans l'onglet Positions.`,
+      });
+    }
+  }
+
+  // Tri par priorité
+  alerts.sort((a, b) => a.priority - b.priority);
+  return alerts;
+}
+
+async function renderAlertsAuto() {
+  const el = $("alertsAutoList");
+  el.innerHTML = '<div class="empty"><span class="loader"></span> Analyse en cours…</div>';
+  try {
+    const alerts = await generateAutoAlerts();
+    if (!alerts.length) {
+      el.innerHTML = `<div class="empty">✅ Tout va bien. Continue ton DCA tranquille — pas d'alerte particulière à signaler.</div>`;
+      return;
+    }
+    el.innerHTML = alerts.map(a => {
+      const tag = a.kind === "urgent" ? "Urgent" : a.kind === "attention" ? "Attention" : a.kind === "opportunite" ? "Opportunité" : "Info";
+      let actionHtml = "";
+      if (a.action) {
+        actionHtml = `<div class="alerte-auto-action">
+          <button class="primary" onclick="proposExecute('${a.action.ticker}', ${a.action.montant || BUDGET_MENSUEL_TYPIQUE})">${a.action.label}</button>
+        </div>`;
+      }
+      return `<div class="alerte-auto ${a.kind}">
+        <div class="alerte-auto-head">
+          <span class="alerte-auto-emoji">${a.emoji}</span>
+          <span class="alerte-auto-title">${a.title}</span>
+          <span class="alerte-auto-tag ${a.kind}">${tag}</span>
+        </div>
+        <div class="alerte-auto-body">${a.body}</div>
+        ${actionHtml}
+      </div>`;
+    }).join("");
+  } catch (e) {
+    el.innerHTML = `<div class="empty" style="color:var(--red);">Erreur : ${e.message}</div>`;
+  }
+}
+
+// ============================================================================
+// NIVEAU / APPRENTISSAGE
+// ============================================================================
+function getUserLevel() {
+  // Calcul basé sur portefeuille + nb positions + ancienneté + diversification
+  const nbPos = D.positions.length;
+  const nbTx = (D.transactions || []).length;
+  const dates = D.positions.map(p => p.date_achat).filter(Boolean).sort();
+  const hasETFWorld = D.positions.some(p => p.ticker === "CW8.PA");
+  const hasSP500 = D.positions.some(p => p.ticker === "500.PA");
+  const hasAsia = D.positions.some(p => p.ticker === "AASI.PA");
+  const hasAction = D.positions.some(p => p.type === "Action");
+  const hasOr = D.positions.some(p => p.type === "Or");
+  const moisDca = dates.length ? Math.floor((Date.now() - new Date(dates[0]).getTime()) / (30 * 86400000)) : 0;
+
+  let level = 0; // 0=Curieux, 1=Débutant, 2=Apprenti, 3=Investisseur, 4=Pro
+  let labelLevel = "Curieux";
+  if (nbPos >= 1) { level = 1; labelLevel = "Débutant"; }
+  if (nbPos >= 1 && hasETFWorld && nbTx >= 3) { level = 2; labelLevel = "Apprenti"; }
+  if (nbPos >= 2 && hasETFWorld && hasSP500 && moisDca >= 6) { level = 3; labelLevel = "Investisseur"; }
+  if (nbPos >= 3 && hasETFWorld && hasSP500 && hasAsia && moisDca >= 12 && (hasAction || hasOr)) { level = 4; labelLevel = "Pro"; }
+  return { level, labelLevel, nbPos, nbTx, moisDca, hasETFWorld, hasSP500, hasAsia, hasAction, hasOr };
+}
+
+function renderNiveau() {
+  const u = getUserLevel();
+
+  // Hero : badge + barre progression
+  const progress = u.level === 0 ? 0
+    : u.level === 1 ? 25
+    : u.level === 2 ? 50
+    : u.level === 3 ? 75
+    : 100;
+  const labels = ["Curieux", "Débutant", "Apprenti", "Investisseur", "Pro"];
+  const messages = [
+    "Tu commences à explorer. Premier objectif : faire ton premier achat.",
+    `Bravo, tu as commencé ! Continue ton DCA régulier sur CW8.PA jusqu'à 1 500 €.`,
+    `Tu prends le rythme. Maintenant, vise 5 000 € et ajoute le S&P 500 quand tu y es.`,
+    `Tu es un investisseur sérieux. Diversifie sur l'Asie + actions IA / spatial selon les phases.`,
+    `Niveau Pro atteint. Tu maîtrises l'allocation prudente complète. Continue à apprendre, surveille tes biais.`,
+  ];
+  $("niveauHero").innerHTML = `
+    <div style="text-align:center;padding:10px 0;">
+      <span class="niveau-badge">Niveau ${u.level} — ${u.labelLevel}</span>
+    </div>
+    <div class="niveau-progress"><div class="niveau-progress-fill" style="width:${progress}%;"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">
+      ${labels.map((l, i) => `<span style="${i === u.level ? 'color:var(--accent);font-weight:700;' : ''}">${l}</span>`).join("")}
+    </div>
+    <div style="margin-top:14px;font-size:13px;line-height:1.6;color:var(--text);">${messages[u.level]}</div>
+  `;
+
+  // Achievements
+  const all = [
+    { id: "open_app", emoji: "📱", title: "Ouvrir l'appli", desc: "Tu es là, c'est déjà fait !", check: () => true },
+    { id: "first_buy", emoji: "💰", title: "1er achat", desc: "Acheter ta première position (recommandé : 100 € de CW8.PA)", check: () => u.nbPos >= 1 },
+    { id: "etf_world", emoji: "🌍", title: "Avoir l'ETF World en socle", desc: "CW8.PA dans ton portefeuille", check: () => u.hasETFWorld },
+    { id: "dca_3", emoji: "📅", title: "3 achats au compteur", desc: "Régularité dans le DCA", check: () => u.nbTx >= 3 },
+    { id: "dca_6mois", emoji: "🗓️", title: "6 mois d'investissement", desc: "Tenir la route sur 6 mois sans paniquer", check: () => u.moisDca >= 6 },
+    { id: "phase_2", emoji: "🇺🇸", title: "Diversifier US (Phase 2)", desc: "Ajouter 500.PA quand le portefeuille atteint 1 500 €", check: () => u.hasSP500 },
+    { id: "phase_3", emoji: "🌏", title: "Ajouter l'Asie (Phase 3)", desc: "AASI.PA pour viser les marchés émergents", check: () => u.hasAsia },
+    { id: "first_action", emoji: "🚀", title: "1ère action individuelle", desc: "Petite ligne sur une action (NVDA recommandée en 1er)", check: () => u.hasAction },
+    { id: "first_or", emoji: "🥇", title: "Premier or physique", desc: "Lingotin ou Napoléon chez Godot & Fils", check: () => u.hasOr },
+    { id: "dca_12mois", emoji: "🏆", title: "1 an d'investissement", desc: "La régularité paye, tu as tenu 1 an", check: () => u.moisDca >= 12 },
+  ];
+  const acquis = all.filter(a => a.check());
+  const todo = all.filter(a => !a.check());
+  const next = todo[0]; // prochain à débloquer
+
+  $("niveauAcquis").innerHTML = acquis.length ? acquis.map(a => `
+    <div class="achievement done">
+      <span class="achievement-emoji">${a.emoji}</span>
+      <div class="achievement-text"><div class="achievement-title">${a.title}</div><div class="achievement-desc">${a.desc}</div></div>
+      <span class="achievement-status ok">✓ OK</span>
+    </div>`).join("") : '<div class="empty">Aucun acquis pour l\'instant. Commence par ton 1er achat !</div>';
+
+  $("niveauProchaines").innerHTML = next ? `
+    <div class="achievement next">
+      <span class="achievement-emoji">${next.emoji}</span>
+      <div class="achievement-text"><div class="achievement-title">PROCHAINE ÉTAPE : ${next.title}</div><div class="achievement-desc">${next.desc}</div></div>
+      <span class="achievement-status next">À faire</span>
+    </div>
+    ${todo.slice(1, 4).map(a => `
+      <div class="achievement todo">
+        <span class="achievement-emoji">${a.emoji}</span>
+        <div class="achievement-text"><div class="achievement-title">${a.title}</div><div class="achievement-desc">${a.desc}</div></div>
+        <span class="achievement-status todo">+ tard</span>
+      </div>`).join("")}
+  ` : '<div class="empty" style="color:var(--green);">🎉 Tu as tout débloqué !</div>';
+
+  // Concepts à comprendre selon le niveau
+  const concepts = [
+    { level: 0, title: "C'est quoi un ETF ?", desc: "Un panier de centaines/milliers d'actions en 1 seule ligne. Tu achètes 1 part de CW8 = tu détiens un peu de chacune des 1 600 plus grosses entreprises du monde. <strong>Diversification instantanée.</strong>" },
+    { level: 0, title: "C'est quoi le DCA ?", desc: "Dollar Cost Averaging = investir une somme fixe régulièrement (ex. 200 €/mois). <strong>Tu lisses ton point d'entrée</strong>, tu n'as pas besoin de prédire le marché. C'est la stratégie débutant la plus efficace." },
+    { level: 1, title: "Qu'est-ce qu'un PEA ?", desc: "Plan d'Épargne en Actions = enveloppe fiscale française. Versements jusqu'à 150 k€. <strong>Après 5 ans : exonération d'impôt sur les plus-values</strong> (sauf 17,2% prélèvements sociaux). Ne le clôture jamais avant 5 ans." },
+    { level: 1, title: "ETF capitalisant vs distribuant", desc: "<strong>Capitalisant (Acc)</strong> = les dividendes sont réinvestis automatiquement dans l'ETF. <strong>Distribuant (Dist)</strong> = tu reçois les dividendes en cash. Sur PEA, capitalisant = effet boule de neige optimal." },
+    { level: 2, title: "PRU (Prix de Revient Unitaire)", desc: "Quand tu achètes plusieurs fois le même ETF à des prix différents, ton PRU est la <strong>moyenne pondérée</strong> de tous tes achats. Si tu achètes en baisse, ton PRU descend = c'est mieux." },
+    { level: 2, title: "Tendance haussière / baissière", desc: "Si la moyenne 50 jours est <strong>au-dessus</strong> de la moyenne 200 jours = tendance haussière (golden cross). En dessous = tendance baissière (death cross). C'est un repère, pas une vérité absolue." },
+    { level: 3, title: "Concentration et risque", desc: "Une seule ligne ne doit pas dépasser <strong>3-5%</strong> du portefeuille pour une action volatile. Si NVDA explose à +200% et atteint 15% du portefeuille, <strong>il faut alléger</strong> pour reprendre le contrôle du risque." },
+    { level: 3, title: "Volatilité annualisée", desc: "C'est la mesure de l'<strong>amplitude des variations</strong>. Un ETF World fait ~15%/an, NVDA ~40%/an, RKLB ~80%/an. Plus c'est élevé, plus tu peux perdre vite (mais aussi gagner)." },
+    { level: 4, title: "Rebalancing trimestriel", desc: "Tous les 3 mois, vérifie que ton allocation correspond toujours à ta cible. Si CW8 est passé de 50% à 65%, c'est qu'il a monté plus que les autres. Tu peux <strong>renforcer les autres</strong> au lieu de vendre CW8." },
+    { level: 4, title: "Biais comportementaux", desc: "Le pire ennemi d'un investisseur, c'est <strong>lui-même</strong>. FOMO (acheter trop haut par peur de rater), panic-sell (vendre en bas), confirmation bias. La règle : <strong>règles écrites > émotions</strong>." },
+  ];
+  const aApprendre = concepts.filter(c => c.level <= u.level + 1).slice(0, 4);
+  $("niveauApprendre").innerHTML = aApprendre.map(c => `
+    <div class="achievement">
+      <span class="achievement-emoji">📖</span>
+      <div class="achievement-text"><div class="achievement-title">${c.title}</div><div class="achievement-desc">${c.desc}</div></div>
+    </div>`).join("");
+
+  // Stats
+  $("niveauStats").innerHTML = `
+    <div class="achievement"><span class="achievement-emoji">📊</span><div class="achievement-text"><div class="achievement-title">${u.nbPos} position${u.nbPos > 1 ? "s" : ""}</div><div class="achievement-desc">Lignes ouvertes dans ton portefeuille</div></div></div>
+    <div class="achievement"><span class="achievement-emoji">💸</span><div class="achievement-text"><div class="achievement-title">${u.nbTx} transaction${u.nbTx > 1 ? "s" : ""}</div><div class="achievement-desc">Achats enregistrés depuis le début</div></div></div>
+    <div class="achievement"><span class="achievement-emoji">📅</span><div class="achievement-text"><div class="achievement-title">${u.moisDca} mois depuis le 1er achat</div><div class="achievement-desc">Plus tu tiens longtemps, plus la magie des intérêts composés agit</div></div></div>
+  `;
 }
 
 // ============================================================================
