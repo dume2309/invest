@@ -3452,7 +3452,7 @@ function bootstrapWatchlist() {
     { ticker: "PLTR", nom: "Palantir", secteur: "IA défense", note: "Fort potentiel" },
     { ticker: "SMCI", nom: "Super Micro", secteur: "Serveurs IA", note: "Volatil" },
     { ticker: "ANET", nom: "Arista Networks", secteur: "Réseau IA", note: "Solide" },
-    { ticker: "SPACEX", nom: "SpaceX", secteur: "Spatial", note: "S-1 attendu (cible IPO juin 2026) — sans dépôt public à J-6 semaines, risque de glissement Q3/Q4 2026. Stratégie : attendre fin du lock-up (~6 mois post-IPO).", preIPO: true, ipoDate: "2026-06", priceEstimate: { low: 145, high: 220, fairValue: 175, currency: "USD", basis: "Valo privée ~400 Md$ (tour 2025) / 5 Md actions estimées — à recalibrer dès sortie S-1" } },
+    { ticker: "SPACEX", nom: "SpaceX (post-xAI)", secteur: "Spatial + IA", note: "S-1 confidentiel déposé 1er avril 2026. Public attendu mai 2026, roadshow semaine du 8 juin, listing Nasdaq juin 2026 (ticker non confirmé). Levée jusqu'à 75 Md$. Stratégie : attendre fin du lock-up (~déc. 2026) ou correction post-hype.", preIPO: true, ipoDate: "2026-06", priceEstimate: { low: 400, high: 1200, fairValue: 525, currency: "USD", basis: "Valo cible ~1,75 T$ (post-fusion xAI fév. 2026). Benchmark consensus ~525 $/action ; fourchette élargie 400-1200 selon scénario hype" } },
   ];
   if (!D.watchlist.length) {
     D.watchlist = defaults.map(d => ({ id: uuid(), ...d }));
