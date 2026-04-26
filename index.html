@@ -445,6 +445,7 @@
     <div id="rappelZone"></div>
     <div id="momentZone"></div>
     <div id="propositionsZone"></div>
+    <div id="prevuZone"></div>
     <div class="card">
       <h2>
         Positions
@@ -880,7 +881,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v1.5";
+const APP_VERSION = "v1.6";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1077,6 +1078,7 @@ async function refreshAll() {
     renderRappel();
     renderMoment();  // async, fire and forget
     renderPropositions();
+    renderPrevu();
     $("syncTime").textContent = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
     dot.className = "sync-dot ok";
   } catch (e) {
@@ -2074,6 +2076,85 @@ async function renderPropositions() {
     </div>`).join("")}
     <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">
       💡 Tu choisis le montant € dans la modale après avoir cliqué.${props.length > 1 ? ` Si tu mets <strong>200 €</strong> ce mois en Phase 2, ça donne ~140 € sur CW8 et ~60 € sur 500.PA.` : ""}
+    </div>
+  </div>`;
+}
+
+async function renderPrevu() {
+  const el = $("prevuZone"); if (!el) return;
+  // On reprend la phase actuelle calculée dans renderPropositions
+  let total = 0;
+  for (const p of D.positions) {
+    try {
+      const q = await getQuote(p.ticker);
+      if (p.type === "Or" && p.ticker === "GC=F") {
+        const eurusd = await getEurUsd();
+        total += (q.price / 31.1035 / eurusd) * p.quantite;
+      } else if (q.currency === "USD") {
+        const eurusd = await getEurUsd();
+        total += (q.price * p.quantite) / eurusd;
+      } else { total += q.price * p.quantite; }
+    } catch {}
+  }
+  const phase = getPhase(total);
+  const tickersByPhase = [
+    ["CW8.PA"],
+    ["CW8.PA"],
+    ["CW8.PA","500.PA"],
+    ["CW8.PA","500.PA","AASI.PA"],
+    ["CW8.PA","500.PA","AASI.PA","NVDA","RKLB"],
+  ];
+  const tickers = tickersByPhase[phase];
+
+  // Prochain mois (label)
+  const next = new Date();
+  next.setMonth(next.getMonth() + 1);
+  const moisLabel = next.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+
+  // Simulation parts pour 100/200/500 €
+  const simRows = [];
+  for (const tk of tickers) {
+    try {
+      const q = await getQuote(tk);
+      let prix = q.price, devise = q.currency;
+      if (q.currency === "USD") {
+        const eurusd = await getEurUsd();
+        prix = q.price / eurusd; devise = "EUR (depuis USD)";
+      }
+      simRows.push({
+        ticker: tk, prix, devise,
+        parts100: 100 / prix,
+        parts200: 200 / prix,
+        parts500: 500 / prix,
+      });
+    } catch {}
+  }
+
+  el.innerHTML = `<div class="card" style="border-color:var(--blue);">
+    <h2 style="color:var(--blue);">🔮 Aperçu — ${moisLabel}</h2>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;">
+      Si tu remets de l'argent le mois prochain, voici ce que tu obtiendrais <strong style="color:var(--text);">au cours actuel</strong> :
+    </div>
+    <table style="width:100%;font-size:12px;border-collapse:collapse;">
+      <thead><tr style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.5px;">
+        <th style="text-align:left;padding:6px 4px;">Ticker</th>
+        <th style="text-align:right;padding:6px 4px;">Cours</th>
+        <th style="text-align:right;padding:6px 4px;">100 €</th>
+        <th style="text-align:right;padding:6px 4px;">200 €</th>
+        <th style="text-align:right;padding:6px 4px;">500 €</th>
+      </tr></thead>
+      <tbody>
+      ${simRows.map(r => `<tr style="border-top:1px solid var(--border);">
+        <td style="padding:8px 4px;"><strong style="color:var(--accent);">${r.ticker}</strong></td>
+        <td style="text-align:right;padding:8px 4px;font-variant-numeric:tabular-nums;">${fmt.num(r.prix,2)} €</td>
+        <td style="text-align:right;padding:8px 4px;font-variant-numeric:tabular-nums;">${fmt.num(r.parts100,3)}</td>
+        <td style="text-align:right;padding:8px 4px;font-variant-numeric:tabular-nums;">${fmt.num(r.parts200,3)}</td>
+        <td style="text-align:right;padding:8px 4px;font-variant-numeric:tabular-nums;">${fmt.num(r.parts500,3)}</td>
+      </tr>`).join("")}
+      </tbody>
+    </table>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">
+      Les cours bougent — ces chiffres sont indicatifs. Le vrai prix sera celui de ton ordre exécuté.
     </div>
   </div>`;
 }
