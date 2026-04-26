@@ -999,7 +999,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v3.1";
+const APP_VERSION = "v3.2";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -2146,7 +2146,48 @@ async function generateAutoAlerts() {
     }
   } catch {}
 
-  // 6. INFO — pas encore de position (1er achat)
+  // 6. PHASES — paliers atteints (passage de phase)
+  const ETF_WORLD = ["DCAM.PA","WPEA.PA","EWLD.PA","CW8.PA"];
+  const ETF_SP500 = ["SPEA.PA","ESE.PA","PE500.PA","500.PA"];
+  const ETF_EM = ["AEEM.PA","PAEEM.PA","AASI.PA"];
+  const ETF_ALL = [...ETF_WORLD,...ETF_SP500,...ETF_EM,"PCEU.PA","PANX.PA","PUST.PA","ANX.PA","CEU.PA"];
+  const totalEtfAlerts = valids.filter(p => ETF_ALL.includes(p.ticker)).reduce((s,p) => s + p.valeur_eur, 0);
+  const hasSP500Alerts = D.positions.some(p => ETF_SP500.includes(p.ticker));
+  const hasEMAlerts = D.positions.some(p => ETF_EM.includes(p.ticker));
+  const hasCTOAlerts = D.positions.some(p => ["NVDA","RKLB","PLTR","ANET","SMCI","TSLA"].includes(p.ticker));
+
+  if (totalEtfAlerts >= 1500 && !hasSP500Alerts) {
+    alerts.push({
+      kind: "opportunite", emoji: "🎉", priority: 1,
+      title: `PHASE 2 DÉBLOQUÉE ! Total ETF ${fmt.eur(totalEtfAlerts)}`,
+      body: `Tu as franchi les <strong>1 500 €</strong> en ETF World — bravo ! Il est temps de diversifier US.<br><br>
+        <strong>Nouvelle allocation pour les futurs achats :</strong> 70% DCAM + 30% SPEA.<br>
+        <strong>Premier achat SPEA recommandé :</strong> mets ce que tu peux ce mois (50-100 € pour démarrer la ligne).`,
+      action: { label: "💰 1er achat SPEA.PA", ticker: "SPEA.PA" },
+    });
+  }
+  if (totalEtfAlerts >= 5000 && !hasEMAlerts) {
+    alerts.push({
+      kind: "opportunite", emoji: "🌏", priority: 1,
+      title: `PHASE 3 DÉBLOQUÉE ! Total ETF ${fmt.eur(totalEtfAlerts)}`,
+      body: `Tu as atteint <strong>5 000 €</strong> en ETF — il est temps d'ouvrir une poche émergents.<br><br>
+        <strong>Nouvelle allocation :</strong> 60% DCAM + 25% SPEA + 15% AEEM (ou PAEEM).<br>
+        <strong>Recherche AEEM ou PAEEM sur ton CA</strong> — premier achat ~50-100 €.`,
+      action: { label: "💰 1er achat émergents", ticker: "AEEM.PA" },
+    });
+  }
+  if (totalEtfAlerts >= 10000 && !hasCTOAlerts) {
+    alerts.push({
+      kind: "opportunite", emoji: "🚀", priority: 1,
+      title: `PHASE 4 DÉBLOQUÉE ! Total ETF ${fmt.eur(totalEtfAlerts)}`,
+      body: `Tu as franchi les <strong>10 000 €</strong> en ETF — base solide construite ! 🎉<br><br>
+        Tu peux maintenant <strong>ouvrir un CTO</strong> chez le CA (5 minutes) et commencer à acheter des actions individuelles.<br>
+        <strong>Reco prudente :</strong> NVDA en 1er (5-6% max du portefeuille), RKLB seulement si repli majeur (1-2% max).<br>
+        On en reparlera quand tu seras prêt — pas urgent.`,
+    });
+  }
+
+  // 7. INFO — pas encore de position (1er achat)
   if (D.positions.length === 0) {
     alerts.push({
       kind: "info", emoji: "🌱", priority: 5,
