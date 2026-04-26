@@ -1011,7 +1011,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v4.6";
+const APP_VERSION = "v4.7";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -2764,7 +2764,7 @@ async function renderPropositions() {
   if (phase === 0) {
     props.push({ ticker: "DCAM.PA", part: 100, desc: "1er achat — l'ETF World, le plus diversifié (1 600 entreprises). Mets ce que tu peux : 50 €, 100 €, 200 €." });
   } else if (phase === 1) {
-    props.push({ ticker: "DCAM.PA", part: 100, desc: `Continue à 100% sur DCAM jusqu'à ~1 500 € (tu es à ${fmt.eur(total)}).` });
+    props.push({ ticker: "DCAM.PA", part: 100, desc: `Continue à 100% sur DCAM jusqu'à ~1 500 € en ETF (tu es à ${fmt.eur(totalEtf)}).` });
   } else if (phase === 2) {
     props.push({ ticker: "DCAM.PA", part: 70, desc: "Socle mondial" });
     props.push({ ticker: "SPEA.PA", part: 30, desc: "Renforcement US (S&P 500)" });
@@ -2806,17 +2806,54 @@ async function renderPropositions() {
     entete = `<strong>Phase 4 — diversification complète.</strong> ETF = ${fmt.eur(totalEtf)}.`;
   }
 
+  // Filtrage : retirer les conseils cachés pour le mois en cours
+  const monthKey = new Date().toISOString().slice(0, 7);
+  const dismissedThisMonth = (D.dismissedAdvice || []).filter(d => d.month === monthKey).map(d => d.ticker);
+  const visibleProps = props.filter(p => !dismissedThisMonth.includes(p.ticker));
+
+  // Si tout est masqué pour ce mois, afficher un état "tout caché"
+  if (!visibleProps.length) {
+    el.innerHTML = `<div class="propos-card" style="opacity:0.6;">
+      <div class="propos-title">💡 Ce mois — ${phaseLabel}</div>
+      <div style="font-size:12px;color:var(--muted);">Conseils masqués pour ${monthKey}.
+        <a href="#" onclick="restoreAdvice('${monthKey}');return false;" style="color:var(--accent);">Réafficher</a>
+      </div>
+    </div>`;
+    return;
+  }
+
   el.innerHTML = `<div class="propos-card">
     <div class="propos-title">💡 Ce mois — ${phaseLabel}</div>
     <div style="font-size:13px;color:var(--text);margin-bottom:12px;line-height:1.5;">${entete}</div>
-    ${props.map(p => `<div class="propos-line">
+    ${visibleProps.map(p => `<div class="propos-line">
       <div class="propos-info">
-        <div class="propos-ticker">${p.ticker}${props.length > 1 ? ` <span style="color:var(--muted);font-size:11px;font-weight:400;">${p.part}%</span>` : ""}</div>
+        <div class="propos-ticker">${p.ticker}${visibleProps.length > 1 ? ` <span style="color:var(--muted);font-size:11px;font-weight:400;">${p.part}%</span>` : ""}</div>
         <div class="propos-desc">${p.desc}</div>
       </div>
-      <button class="propos-btn" onclick="proposExecute('${p.ticker}', null)">💰 J'ai fait</button>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="propos-btn" onclick="proposExecute('${p.ticker}', null)">💰 J'ai fait</button>
+        <button onclick="dismissAdvice('${p.ticker}')" title="Cacher pour ce mois" style="background:transparent;border:1px solid var(--bg-4);color:var(--muted);padding:4px 8px;font-size:11px;min-height:26px;border-radius:6px;cursor:pointer;">✕</button>
+      </div>
     </div>`).join("")}
   </div>`;
+}
+
+function dismissAdvice(ticker) {
+  const monthKey = new Date().toISOString().slice(0, 7);
+  if (!D.dismissedAdvice) D.dismissedAdvice = [];
+  if (!D.dismissedAdvice.some(d => d.ticker === ticker && d.month === monthKey)) {
+    D.dismissedAdvice.push({ ticker, month: monthKey, ts: Date.now() });
+  }
+  saveLocal();
+  renderPropositions();
+  toast(`${ticker} masqué pour ce mois`, "");
+}
+
+function restoreAdvice(monthKey) {
+  if (!D.dismissedAdvice) return;
+  D.dismissedAdvice = D.dismissedAdvice.filter(d => d.month !== monthKey);
+  saveLocal();
+  renderPropositions();
 }
 
 // === Profil risque/rendement par ticker (volatilité annuelle, rendement moyen historique) ===
