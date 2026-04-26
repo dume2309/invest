@@ -929,7 +929,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v2.0";
+const APP_VERSION = "v2.1";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1702,7 +1702,31 @@ async function ghPushNow() {
   $("syncDot").className = "sync-dot warn";
   try {
     let sha = null;
-    try { const cur = await ghGetFile(GH_PATH); sha = cur?.sha; } catch {}
+    let remoteData = null;
+    try {
+      const cur = await ghGetFile(GH_PATH);
+      sha = cur?.sha;
+      if (cur?.content) remoteData = JSON.parse(cur.content);
+    } catch {}
+
+    // GARDE-FOU ANTI-ÉCRASEMENT : si distant a des données mais local est vide → refuser
+    if (remoteData) {
+      const remoteCount = (remoteData.positions?.length || 0)
+                        + (remoteData.alertes?.length || 0)
+                        + (remoteData.watchlist?.filter(w => !["RKLB","NVDA","PLTR","SMCI","ANET"].includes(w.ticker))?.length || 0) // ignorer la watchlist par défaut
+                        + (remoteData.analyses?.length || 0);
+      const localCount = (D.positions?.length || 0)
+                       + (D.alertes?.length || 0)
+                       + (D.watchlist?.filter(w => !["RKLB","NVDA","PLTR","SMCI","ANET"].includes(w.ticker))?.length || 0)
+                       + (D.analyses?.length || 0);
+      if (remoteData.positions?.length > 0 && (D.positions?.length || 0) === 0) {
+        $("syncDot").className = "sync-dot err";
+        toast("⚠ Push refusé : local vide alors que GitHub a des positions. Pull d'abord !", "error");
+        console.warn("Push refusé : local positions=0, remote positions=", remoteData.positions.length);
+        return;
+      }
+    }
+
     const json = JSON.stringify(D, null, 2);
     await ghPutFile(GH_PATH, json, `sync: ${new Date().toISOString()}`, sha);
     // Backup TXT lisible
@@ -1799,11 +1823,16 @@ function importJson(ev) {
   r.readAsText(f);
 }
 function resetAll() {
-  if (!confirm("Tout effacer (positions, alertes, watchlist) ?")) return;
-  if (!confirm("Vraiment ? Cette action est irréversible côté local.")) return;
-  D = { positions: [], alertes: [], watchlist: [], deletedIds: [], lastModified: Date.now(), schemaVersion: 1 };
-  saveLocal(); refreshAll();
-  toast("Tout effacé", "success");
+  if (!confirm("⚠ EFFACER TOUT ?\n\nCela supprime : positions, alertes, watchlist, rapports coach.\n\nSur GitHub aussi (si tu as configuré le token) — donc PERTE DÉFINITIVE.\n\nContinuer ?")) return;
+  if (!confirm("Dernière confirmation. Tout va être effacé. Es-tu SÛR ?")) return;
+  // Désactive temporairement le push pour éviter l'écrasement involontaire
+  const tok = getToken();
+  if (tok) localStorage.removeItem(TOKEN_KEY);
+  D = { positions: [], alertes: [], watchlist: [], analyses: [], deletedIds: [], lastModified: Date.now(), schemaVersion: 1 };
+  saveLocal(false); // pas de push
+  if (tok) localStorage.setItem(TOKEN_KEY, tok); // remet le token
+  refreshAll();
+  toast("Tout effacé localement (GitHub intact)", "success");
 }
 async function forceUpdate() {
   if ("serviceWorker" in navigator) {
@@ -2897,17 +2926,40 @@ function bootstrapWatchlist() {
 window.addEventListener("DOMContentLoaded", async () => {
   $("versionInfo").textContent = APP_VERSION;
   loadLocal();
-  bootstrapWatchlist();
   updateTokenStatus();
-  // Pull au boot si token présent
-  if (getToken()) { ghPullNow(); } else { refreshAll(); }
+  // Pull bloquant au boot si token présent (avant tout rendu/save)
+  if (getToken()) {
+    showBootOverlay("Synchronisation avec GitHub…");
+    try { await ghPullNow(); } catch(e) { console.warn("Pull boot:", e); }
+    hideBootOverlay();
+  }
+  bootstrapWatchlist();
+  refreshAll();
   // SW
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(e => console.warn("SW", e));
   }
   // Auto-refresh toutes les 5 min en foreground
   setInterval(() => { if (!document.hidden) refreshAll(); }, 5 * 60_000);
+  // Auto-pull toutes les 5 min en background pour récupérer les modifs des autres appareils
+  setInterval(() => { if (!document.hidden && getToken()) ghPullNow(); }, 5 * 60_000);
 });
+
+function showBootOverlay(msg) {
+  let o = $("bootOverlay");
+  if (!o) {
+    o = document.createElement("div");
+    o.id = "bootOverlay";
+    o.style.cssText = "position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;gap:14px;";
+    o.innerHTML = `<div style="font-size:20px;font-weight:600;color:var(--accent);">📈 Portfolio Tracker</div>
+      <span class="loader" style="width:30px;height:30px;border-width:3px;"></span>
+      <div id="bootMsg" style="color:var(--muted);font-size:13px;">${msg}</div>`;
+    document.body.appendChild(o);
+  } else { $("bootMsg").textContent = msg; o.style.display = "flex"; }
+}
+function hideBootOverlay() {
+  const o = $("bootOverlay"); if (o) o.style.display = "none";
+}
 </script>
 
 </body>
