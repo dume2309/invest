@@ -880,7 +880,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v1.4";
+const APP_VERSION = "v1.5";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1238,7 +1238,7 @@ async function renderWatchlist() {
       <div class="pos-meta">
         <span>${w.secteur || ""}</span>
         <span style="flex:1;">${w.note || ""}</span>
-        ${w.score >= 4 ? `<button class="primary" onclick="proposExecute('${w.ticker}', ${BUDGET_MENSUEL_TYPIQUE / 4 | 0})" style="padding:4px 10px;font-size:11px;min-height:26px;">💰 J'ai acheté</button>` : ""}
+        ${w.score >= 4 ? `<button class="primary" onclick="proposExecute('${w.ticker}', null)" style="padding:4px 10px;font-size:11px;min-height:26px;">💰 J'ai acheté</button>` : ""}
         <button class="danger" onclick="delWatchlist('${w.id}')" style="padding:0;">×</button>
       </div>
     </div>`;
@@ -1868,7 +1868,7 @@ async function renderAlertsAuto() {
       let actionHtml = "";
       if (a.action) {
         actionHtml = `<div class="alerte-auto-action">
-          <button class="primary" onclick="proposExecute('${a.action.ticker}', ${a.action.montant || BUDGET_MENSUEL_TYPIQUE})">${a.action.label}</button>
+          <button class="primary" onclick="proposExecute('${a.action.ticker}', ${a.action.montant != null ? a.action.montant : 'null'})">${a.action.label}</button>
         </div>`;
       }
       return `<div class="alerte-auto ${a.kind}">
@@ -2005,9 +2005,8 @@ function renderNiveau() {
 }
 
 // ============================================================================
-// PROPOSITIONS D'ACHAT AUTO (basées sur phase + budget mensuel typique)
+// PROPOSITIONS D'ACHAT AUTO (basées sur phase, sans montant fixe)
 // ============================================================================
-const BUDGET_MENSUEL_TYPIQUE = 250; // budget moyen utilisateur (200-500 €)
 
 function getPhase(totalEur) {
   if (totalEur < 100) return 0;       // démarrage
@@ -2036,63 +2035,45 @@ async function renderPropositions() {
   }
   const phase = getPhase(total);
 
-  // Construction des propositions selon la phase
+  // Construction des propositions selon la phase (% uniquement, pas de €)
   const props = [];
   if (phase === 0) {
-    props.push({
-      ticker: "CW8.PA", montant: 100,
-      desc: "1er achat — démarre avec 100 € sur l'ETF World, le plus diversifié (1 600 entreprises)"
-    });
+    props.push({ ticker: "CW8.PA", part: 100, desc: "1er achat — l'ETF World, le plus diversifié (1 600 entreprises). Mets ce que tu peux : 50 €, 100 €, 200 €." });
   } else if (phase === 1) {
-    props.push({
-      ticker: "CW8.PA", montant: BUDGET_MENSUEL_TYPIQUE,
-      desc: `Continue à 100% sur CW8.PA jusqu'à ~1 500 € (tu es à ${fmt.eur(total)}). Pas besoin de diversifier maintenant.`
-    });
+    props.push({ ticker: "CW8.PA", part: 100, desc: `Continue à 100% sur CW8.PA jusqu'à ~1 500 € (tu es à ${fmt.eur(total)}).` });
   } else if (phase === 2) {
-    const cw8Cible = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.7);
-    const sp500Cible = BUDGET_MENSUEL_TYPIQUE - cw8Cible;
-    props.push({ ticker: "CW8.PA", montant: cw8Cible, desc: "70% du DCA mensuel — socle mondial" });
-    props.push({ ticker: "500.PA", montant: sp500Cible, desc: "30% du DCA mensuel — renforcement US" });
+    props.push({ ticker: "CW8.PA", part: 70, desc: "Socle mondial" });
+    props.push({ ticker: "500.PA", part: 30, desc: "Renforcement US" });
   } else if (phase === 3) {
-    const cw8 = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.6);
-    const sp = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.25);
-    const asia = BUDGET_MENSUEL_TYPIQUE - cw8 - sp;
-    props.push({ ticker: "CW8.PA", montant: cw8, desc: "60% — socle mondial" });
-    props.push({ ticker: "500.PA", montant: sp, desc: "25% — moteur US" });
-    props.push({ ticker: "AASI.PA", montant: asia, desc: "15% — Asie émergente (Inde, Chine, Corée)" });
+    props.push({ ticker: "CW8.PA", part: 60, desc: "Socle mondial" });
+    props.push({ ticker: "500.PA", part: 25, desc: "Renforcement US" });
+    props.push({ ticker: "AASI.PA", part: 15, desc: "Asie émergente (Inde, Chine, Corée)" });
   } else {
-    const cw8 = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.50);
-    const sp = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.22);
-    const asia = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.08);
-    const nvda = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.06);
-    const rklb = Math.round(BUDGET_MENSUEL_TYPIQUE * 0.02);
-    const or = BUDGET_MENSUEL_TYPIQUE - cw8 - sp - asia - nvda - rklb;
-    props.push({ ticker: "CW8.PA", montant: cw8, desc: "Socle mondial" });
-    props.push({ ticker: "500.PA", montant: sp, desc: "Renforcement US" });
-    props.push({ ticker: "AASI.PA", montant: asia, desc: "Asie émergente" });
-    props.push({ ticker: "NVDA", montant: nvda, desc: "IA via leader large cap (CTO requis)" });
-    props.push({ ticker: "RKLB", montant: rklb, desc: "Pari spatial petite ligne (CTO requis)" });
-    if (or > 0) props.push({ ticker: "GC=F", montant: or, desc: `Or physique chez Godot (~${(or/115).toFixed(1)} g)` });
+    props.push({ ticker: "CW8.PA", part: 50, desc: "Socle mondial" });
+    props.push({ ticker: "500.PA", part: 22, desc: "Renforcement US" });
+    props.push({ ticker: "AASI.PA", part: 8, desc: "Asie émergente" });
+    props.push({ ticker: "NVDA", part: 6, desc: "IA via leader (CTO requis)" });
+    props.push({ ticker: "RKLB", part: 2, desc: "Pari spatial petite ligne (CTO requis)" });
+    props.push({ ticker: "GC=F", part: 12, desc: "Or physique chez Godot" });
   }
 
-  const phaseLabels = ["Démarrage", "Phase 1 — socle CW8", "Phase 2 — CW8 + S&P 500", "Phase 3 — + Asie", "Phase 4 — diversification complète"];
+  const phaseLabels = ["Démarrage", "Phase 1 — 100% CW8", "Phase 2 — CW8 + S&P 500", "Phase 3 — + Asie", "Phase 4 — diversification complète"];
   const phaseLabel = phaseLabels[phase];
 
   el.innerHTML = `<div class="propos-card">
     <div class="propos-title">📋 Propositions du mois — ${phaseLabel}</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">
-      Si tu mets <strong style="color:var(--text);">${fmt.eur(BUDGET_MENSUEL_TYPIQUE)} ce mois</strong>${total > 0 ? ` (portefeuille actuel : ${fmt.eur(total)})` : ""}, voici ce que je te conseille de faire. Clique sur 💰 pour saisir l'achat directement.
+      ${total > 0 ? `Portefeuille : <strong style="color:var(--text);">${fmt.eur(total)}</strong> · ` : ""}<strong style="color:var(--text);">Ce mois, achète ${props.length === 1 ? "ça" : "ces ETF dans ces proportions"}</strong>${props.length > 1 ? " :" : "."}
     </div>
     ${props.map(p => `<div class="propos-line">
       <div class="propos-info">
-        <div class="propos-ticker">${p.ticker}</div>
+        <div class="propos-ticker">${p.ticker}${props.length > 1 ? ` <span style="color:var(--muted);font-size:11px;font-weight:400;">${p.part}%</span>` : ""}</div>
         <div class="propos-desc">${p.desc}</div>
       </div>
-      <span class="propos-amount">${fmt.eur(p.montant)}</span>
-      <button class="propos-btn" onclick="proposExecute('${p.ticker}', ${p.montant})">💰 J'ai fait</button>
+      <button class="propos-btn" onclick="proposExecute('${p.ticker}', null)">💰 J'ai fait</button>
     </div>`).join("")}
     <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">
-      💡 Tu peux ajuster les montants (modifier ${fmt.eur(BUDGET_MENSUEL_TYPIQUE)} dans Réglages bientôt) ou cliquer "💰 J'ai fait" et changer la valeur dans la modale.
+      💡 Tu choisis le montant € dans la modale après avoir cliqué.${props.length > 1 ? ` Si tu mets <strong>200 €</strong> ce mois en Phase 2, ça donne ~140 € sur CW8 et ~60 € sur 500.PA.` : ""}
     </div>
   </div>`;
 }
@@ -2101,8 +2082,13 @@ function proposExecute(ticker, montant) {
   openExpressModal();
   $("x_ticker").value = ticker;
   toggleExpressFields();
-  $("x_montant").value = montant;
-  expressPreview();
+  if (montant != null) {
+    $("x_montant").value = montant;
+    expressPreview();
+  } else {
+    // Pas de montant pré-rempli : focus direct sur le champ
+    setTimeout(() => $("x_montant").focus(), 100);
+  }
 }
 
 // ============================================================================
