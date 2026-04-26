@@ -1011,7 +1011,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v3.9";
+const APP_VERSION = "v4.0";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -2298,10 +2298,17 @@ async function generateAutoAlerts() {
     alerts.push({
       kind: "opportunite", emoji: "🎉", priority: 1,
       title: `PHASE 2 DÉBLOQUÉE ! Total ETF ${fmt.eur(totalEtfAlerts)}`,
-      body: `Tu as franchi les <strong>1 500 €</strong> en ETF World — bravo ! Il est temps de diversifier US.<br><br>
-        <strong>Nouvelle allocation pour les futurs achats :</strong> 70% DCAM + 30% SPEA.<br>
-        <strong>Premier achat SPEA recommandé :</strong> mets ce que tu peux ce mois (50-100 € pour démarrer la ligne).`,
-      action: { label: "💰 1er achat SPEA.PA", ticker: "SPEA.PA" },
+      body: `Tu as franchi les <strong>1 500 €</strong> en ETF World — bravo ! Il est temps de diversifier vers le S&P 500.<br><br>
+        <strong>📌 Nouvelle allocation</strong> pour les <strong>futurs achats</strong> : 70% DCAM + 30% SPEA. (Tu ne touches pas à ce que tu as déjà.)<br><br>
+        <strong>⚠ Risques à connaître :</strong><br>
+        • <strong>Concentration US accrue</strong> : DCAM contient déjà ~70% de US, ajouter SPEA = ~85% US dans les nouveaux versements<br>
+        • Vola annualisée S&P 500 ~18% (vs World ~15%) — légèrement plus volatil<br>
+        • Pire baisse historique S&P 500 ~-30% (vs World -25%)<br><br>
+        <strong>💸 Fiscalité :</strong><br>
+        • SPEA est <strong>PEA-éligible</strong> → aucun impact fiscal, tu restes dans ton enveloppe PEA<br>
+        • Toujours <strong>5 ans minimum</strong> de détention pour exo IR (compté depuis l'ouverture du PEA, pas chaque achat)<br><br>
+        <strong>👉 Premier achat :</strong> 50-100 € sur SPEA pour démarrer la ligne (~10-17 parts à ~5,90 €).`,
+      action: { label: "💰 1er achat SPEA", ticker: "SPEA.PA" },
     });
   }
   if (totalEtfAlerts >= 5000 && !hasEMAlerts) {
@@ -2309,19 +2316,40 @@ async function generateAutoAlerts() {
       kind: "opportunite", emoji: "🌏", priority: 1,
       title: `PHASE 3 DÉBLOQUÉE ! Total ETF ${fmt.eur(totalEtfAlerts)}`,
       body: `Tu as atteint <strong>5 000 €</strong> en ETF — il est temps d'ouvrir une poche émergents.<br><br>
-        <strong>Nouvelle allocation :</strong> 60% DCAM + 25% SPEA + 15% AEEM (ou PAEEM).<br>
-        <strong>Recherche AEEM ou PAEEM sur ton CA</strong> — premier achat ~50-100 €.`,
-      action: { label: "💰 1er achat émergents", ticker: "AEEM.PA" },
+        <strong>📌 Nouvelle allocation</strong> : 60% DCAM + 25% SPEA + 15% AEEM. (Pour les nouveaux versements.)<br><br>
+        <strong>⚠ Risques à connaître :</strong><br>
+        • <strong>Volatilité forte</strong> : Émergents ~22%/an (vs World 15%) — drawdowns plus marqués<br>
+        • Pire baisse historique ~-35%<br>
+        • <strong>Risque pays/devise</strong> : exposé Chine, Inde, Taiwan, Corée — instabilité politique possible<br>
+        • <strong>Risque géopolitique</strong> : tensions Chine/Taiwan, sanctions, etc.<br><br>
+        <strong>💸 Fiscalité :</strong><br>
+        • AEEM est <strong>PEA-éligible</strong> (réplication SWAP synthétique) → exo IR après 5 ans<br>
+        • Aucun impact fiscal supplémentaire vs DCAM/SPEA<br><br>
+        <strong>👉 Premier achat :</strong> 50-100 € sur AEEM (~7 €/part = 7-14 parts).`,
+      action: { label: "💰 1er achat AEEM", ticker: "AEEM.PA" },
     });
   }
   if (totalEtfAlerts >= 10000 && !hasCTOAlerts) {
     alerts.push({
       kind: "opportunite", emoji: "🚀", priority: 1,
       title: `PHASE 4 DÉBLOQUÉE ! Total ETF ${fmt.eur(totalEtfAlerts)}`,
-      body: `Tu as franchi les <strong>10 000 €</strong> en ETF — base solide construite ! 🎉<br><br>
-        Tu peux maintenant <strong>ouvrir un CTO</strong> chez le CA (5 minutes) et commencer à acheter des actions individuelles.<br>
-        <strong>Reco prudente :</strong> NVDA en 1er (5-6% max du portefeuille), RKLB seulement si repli majeur (1-2% max).<br>
-        On en reparlera quand tu seras prêt — pas urgent.`,
+      body: `Tu as franchi les <strong>10 000 €</strong> en ETF — base solide ! 🎉 Tu peux maintenant ouvrir un <strong>CTO</strong> pour acheter des actions individuelles US.<br><br>
+        <strong>📌 Action :</strong> ouvrir un CTO chez le CA (5 min en ligne, gratuit).<br><br>
+        <strong>⚠ Risques GRAVES — lis bien :</strong><br>
+        • <strong>Actions individuelles = risque idiosyncrasique</strong> : si la société va mal, tu peux perdre 50-90% (jamais avec un ETF)<br>
+        • Volatilité actions tech : 40-80%/an (vs ETF 15-22%)<br>
+        • <strong>Limite stricte</strong> : max 5% par action solide (NVDA), max 2% par action très volatile (RKLB), TOTAL actions ≤ 15% du portefeuille<br>
+        • Garde toujours 80%+ en ETF pour ne pas casser le profil prudent<br><br>
+        <strong>💸 Fiscalité CTO (très différent du PEA !) :</strong><br>
+        • <strong>Flat tax 30%</strong> (12,8% IR + 17,2% PS) sur chaque plus-value à la vente<br>
+        • PAS d'exonération après 5 ans (contrairement au PEA)<br>
+        • Pertes déductibles des plus-values pendant 10 ans<br>
+        • Déclaration annuelle obligatoire (formulaire 2042)<br><br>
+        <strong>👉 Reco prudente :</strong><br>
+        1. Ouvre le CTO sans rien acheter (juste la structure)<br>
+        2. Achat NVDA petite ligne (5% max) quand bon timing (-10% repli)<br>
+        3. RKLB seulement si gros repli (-30%) — petite ligne 1-2%<br>
+        4. Ignore PLTR, SMCI, TSLA pour ton profil prudent.`,
     });
   }
 
