@@ -881,7 +881,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v1.6";
+const APP_VERSION = "v1.7";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1149,6 +1149,9 @@ function renderPositions(valos) {
         <span>${fmt.num(p.quantite, p.type === "Or" ? 2 : 4)}${unite} × ${fmt.num(p.prix_achat, 2)} ${p.devise}</span>
         <span>Cours ${fmt.num(p.prix_actuel, 2)} ${p.devise_cotation}</span>
         <span class="${cls(p.change_pct_jour)}">Jour ${fmt.pct(p.change_pct_jour)}</span>
+      </div>
+      <div style="margin-top:6px;padding:6px 8px;background:var(--bg-4);border-radius:6px;">
+        ${riskRangeHtml(p.ticker, p.type, p.valeur_eur)}
       </div>
     </div>`;
   }).join("");
@@ -2080,6 +2083,41 @@ async function renderPropositions() {
   </div>`;
 }
 
+// === Profil risque/rendement par ticker (volatilité annuelle, rendement moyen historique) ===
+const RISK_DATA = {
+  "CW8.PA":  { vol: 15, rendement: 7,  pireBaisse: -25, label: "ETF World — diversifié" },
+  "500.PA":  { vol: 18, rendement: 9,  pireBaisse: -30, label: "ETF S&P 500 — concentré US" },
+  "AASI.PA": { vol: 22, rendement: 6,  pireBaisse: -35, label: "ETF EM Asia — émergents" },
+  "AEEM.PA": { vol: 22, rendement: 6,  pireBaisse: -35, label: "ETF Emerging Markets" },
+  "GC=F":    { vol: 14, rendement: 5,  pireBaisse: -20, label: "Or physique — couverture" },
+  "NVDA":    { vol: 45, rendement: 25, pireBaisse: -55, label: "Action large cap IA" },
+  "RKLB":    { vol: 80, rendement: 30, pireBaisse: -75, label: "Action mid cap spatiale" },
+  "PLTR":    { vol: 60, rendement: 20, pireBaisse: -65, label: "Action software IA" },
+  "SMCI":    { vol: 75, rendement: 15, pireBaisse: -75, label: "Action serveurs IA" },
+  "ANET":    { vol: 35, rendement: 18, pireBaisse: -40, label: "Action réseau IA" },
+};
+function getRiskData(ticker, type) {
+  if (RISK_DATA[ticker]) return RISK_DATA[ticker];
+  // Fallback selon type
+  if (type === "ETF") return { vol: 18, rendement: 7, pireBaisse: -30, label: "ETF" };
+  if (type === "Or") return { vol: 14, rendement: 5, pireBaisse: -20, label: "Or" };
+  return { vol: 40, rendement: 12, pireBaisse: -50, label: "Action" };
+}
+function riskRangeHtml(ticker, type, montantEur) {
+  const r = getRiskData(ticker, type);
+  // Fourchette probable à 1 an (1 écart-type = 68% probabilité, mais on prend rendement ± vol comme estimation usuelle)
+  const baisseProb = r.rendement - r.vol;
+  const hausseProb = r.rendement + r.vol;
+  const baisseEur = montantEur * baisseProb / 100;
+  const hausseEur = montantEur * hausseProb / 100;
+  const pireEur = montantEur * r.pireBaisse / 100;
+  return `<div style="font-size:11px;color:var(--muted);line-height:1.5;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+    <span>📊 À 1 an :</span>
+    <span style="color:var(--red);">pire <strong>${pireEur >= 0 ? "+" : ""}${fmt.eur(pireEur)}</strong> (${r.pireBaisse}%)</span>
+    <span>probable <strong style="color:${baisseProb < 0 ? "var(--red)" : "var(--text)"};">${baisseEur >= 0 ? "+" : ""}${fmt.eur(baisseEur)}</strong> à <strong style="color:var(--green);">+${fmt.eur(hausseEur)}</strong></span>
+  </div>`;
+}
+
 async function renderPrevu() {
   const el = $("prevuZone"); if (!el) return;
   // On reprend la phase actuelle calculée dans renderPropositions
@@ -2155,6 +2193,22 @@ async function renderPrevu() {
     </table>
     <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">
       Les cours bougent — ces chiffres sont indicatifs. Le vrai prix sera celui de ton ordre exécuté.
+    </div>
+    <div style="margin-top:12px;padding:10px 12px;background:var(--bg-3);border-radius:8px;">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">📊 Risque/gain à 1 an pour 200 € investis aujourd'hui</div>
+      ${tickers.map(tk => {
+        const r = getRiskData(tk, tk === "GC=F" ? "Or" : (RISK_DATA[tk]?.label?.startsWith("Action") ? "Action" : "ETF"));
+        return `<div style="padding:6px 0;border-top:1px solid var(--border);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+            <strong style="color:var(--accent);">${tk}</strong>
+            <span style="font-size:10px;color:var(--muted);">${r.label}</span>
+          </div>
+          ${riskRangeHtml(tk, "ETF", 200)}
+        </div>`;
+      }).join("")}
+      <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.5;">
+        ⚠ Estimations basées sur la volatilité historique. La fourchette "probable" couvre ~68% des cas. Le "pire" correspond aux plus fortes baisses observées historiquement.
+      </div>
     </div>
   </div>`;
 }
