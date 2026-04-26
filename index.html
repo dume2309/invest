@@ -992,7 +992,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v2.6";
+const APP_VERSION = "v2.7";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1256,6 +1256,7 @@ function renderPositions(valos) {
           <div class="pos-pv ${cls(p.pv_eur)}">${(p.pv_eur >= 0 ? "+" : "")}${fmt.eur(p.pv_eur)} (${fmt.pct(p.pv_pct)})</div>
         </div>
       </div>
+      ${p.details ? `<div style="font-size:11px;color:var(--accent);background:var(--bg-4);padding:4px 8px;border-radius:4px;margin-top:4px;display:inline-block;">📦 ${p.details.nb_unites} × ${p.details.type_unite} (= ${fmt.num(p.quantite, 2)} g)</div>` : ""}
       <div class="pos-meta">
         <span>${fmt.num(p.quantite, p.type === "Or" ? 2 : 4)}${unite} × ${fmt.num(p.prix_achat, 2)} ${p.devise}</span>
         <span>Cours ${fmt.num(p.prix_actuel, 2)} ${p.devise_cotation}</span>
