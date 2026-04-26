@@ -1006,7 +1006,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v3.7";
+const APP_VERSION = "v3.8";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -2201,8 +2201,16 @@ async function generateAutoAlerts() {
     }
   }
 
-  // 4. WATCHLIST — opportunités d'achat
-  for (const w of D.watchlist) {
+  // === Filtre contextuel : ce que l'utilisateur peut acheter selon sa situation ===
+  // Détection : phase actuelle (basée sur ETF investi) + a-t-il un CTO (heuristique : action en USD ?)
+  const ETF_TICKERS_F = ["DCAM.PA","SPEA.PA","WPEA.PA","EWLD.PA","CW8.PA","ESE.PA","PE500.PA","500.PA","AEEM.PA","PAEEM.PA","AASI.PA","PCEU.PA","PANX.PA","PUST.PA","ANX.PA","CEU.PA"];
+  const totalEtfF = valids.filter(p => ETF_TICKERS_F.includes(p.ticker)).reduce((s,p) => s + p.valeur_eur, 0);
+  const hasCTO = D.positions.some(p => p.devise === "USD" || ["NVDA","RKLB","PLTR","ANET","SMCI","TSLA","AAPL","MSFT","GOOGL","AMZN","META"].includes(p.ticker));
+  const ACTIONS_INDIV = ["NVDA","RKLB","PLTR","ANET","SMCI","TSLA","AAPL","MSFT","GOOGL","AMZN","META"];
+
+  // 4. WATCHLIST — opportunités d'achat (UNIQUEMENT si CTO ou Phase 4+)
+  // Sinon (Phase 0-3 sans CTO) : pas pertinent, l'utilisateur ne peut pas acheter ces actions
+  if (hasCTO || totalEtfF >= 10000) for (const w of D.watchlist) {
     try {
       const q = await getQuote(w.ticker);
       const hist = await fetchYahooHistory(w.ticker, "1y");
@@ -2246,12 +2254,15 @@ async function generateAutoAlerts() {
     const hist = await fetchYahooHistory("DCAM.PA", "6mo");
     const closes = hist.map(d => d.close);
     const var1m = closes.length > 21 ? (q.price / closes[closes.length - 22] - 1) * 100 : 0;
+    // Adapter selon ce que l'utilisateur peut acheter (DCAM pour Phase 1, sinon ticker pertinent)
+    const tickerCible = totalEtfF < 1500 ? "DCAM.PA" : (totalEtfF < 5000 ? "SPEA.PA" : "AEEM.PA");
+    const labelCible = tickerCible === "DCAM.PA" ? "DCAM (World)" : tickerCible === "SPEA.PA" ? "SPEA (S&P 500)" : "AEEM (Émergents)";
     if (var1m < -8) {
       alerts.push({
         kind: "opportunite", emoji: "🌍", priority: 3,
         title: `Marché mondial en repli de ${var1m.toFixed(1)}% sur 1 mois`,
-        body: `<strong>C'est une fenêtre d'achat</strong>. Les actions sont en solde. Si ton budget le permet, <strong>double ton DCA habituel ce mois</strong> (ex. 400-500 € au lieu de 200). Le marché remonte historiquement après ces phases.`,
-        action: { label: "💰 Je renforce CW8.PA", ticker: "DCAM.PA" },
+        body: `<strong>C'est une fenêtre d'achat</strong>. Les actions sont en solde. Si ton budget mensuel le permet, <strong>mets un peu plus que d'habitude ce mois</strong> (ex. 300-400 € au lieu de 200) sur <strong>${labelCible}</strong>. Le marché remonte historiquement après ces phases.`,
+        action: { label: `💰 Je renforce ${tickerCible}`, ticker: tickerCible },
       });
     }
     if (var1m > 12) {
