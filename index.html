@@ -636,7 +636,7 @@
           <li>🟢🟡🔴 <strong>Conseil du moment</strong> : si le marché est calme, en repli (bon moment) ou tendu (patiente)</li>
           <li>📋 <strong>Propositions du mois</strong> : ce que je te conseille d'acheter avec ton budget habituel</li>
         </ul>
-        <p><strong>2.</strong> Tu vas sur ton compte CA ETF, tu achètes ce qu'on a décidé (ex. 200 € de CW8.PA)</p>
+        <p><strong>2.</strong> Tu vas sur ton compte CA ETF, tu achètes ce qu'on a décidé (ex. 200 € de DCAM)</p>
         <p><strong>3.</strong> Tu reviens dans l'app, clic sur <strong>💰 J'ai fait</strong> en face de la ligne, tu vérifies que le montant correspond, tu valides. Fini.</p>
         <p style="color:var(--green);font-weight:600;">⏱ Total : 5 secondes par mois.</p>
       </div>
@@ -657,16 +657,21 @@
     <div class="card">
       <h2>📐 Ta stratégie en résumé</h2>
       <div style="font-size:13px;line-height:1.7;color:var(--text);">
-        <p><strong>Profil :</strong> prudent, débutant, achats 100% manuels (jamais de virement auto)</p>
-        <p><strong>Budget :</strong> 100 € de démarrage + 200-500 €/mois (parfois 0 €)</p>
-        <p><strong>Phases d'évolution du portefeuille :</strong></p>
-        <ul style="color:var(--muted);padding-left:20px;">
-          <li><strong>Phase 1 (0 → 1 500 €) :</strong> 100% CW8.PA (Amundi MSCI World, le plus diversifié)</li>
-          <li><strong>Phase 2 (1 500 → 5 000 €) :</strong> 70% CW8 + 30% 500.PA (S&P 500)</li>
-          <li><strong>Phase 3 (5 000 → 10 000 €) :</strong> 60% CW8 + 25% 500.PA + 15% AASI.PA (Asie)</li>
-          <li><strong>Phase 4 (10 000+ €) :</strong> on ajoute NVDA (5%), RKLB (2%) et or physique (12%)</li>
-        </ul>
-        <p>L'appli détecte automatiquement ta phase actuelle et adapte les propositions.</p>
+        <p><strong>Profil :</strong> prudent, débutant, achats 100% manuels</p>
+        <p><strong>Budget :</strong> 100-300 €/mois en DCA (parfois 0 €)</p>
+        <p style="margin-top:14px;"><strong style="color:var(--accent);">Tu démarres ici :</strong></p>
+        <div style="background:rgba(212,175,55,0.08);border-left:3px solid var(--accent);padding:8px 12px;border-radius:4px;">
+          <strong>Phase 1</strong> — 100% <strong>DCAM</strong> (Amundi PEA MSCI World, ~5,67 €/part) jusqu'à 1 500 € investis
+        </div>
+        <details style="margin-top:14px;">
+          <summary style="cursor:pointer;color:var(--muted);font-size:12px;">▸ Voir l'évolution future (phases 2 à 4)</summary>
+          <ul style="color:var(--muted);padding-left:20px;margin-top:8px;font-size:12px;">
+            <li><strong>Phase 2</strong> (1 500 → 5 000 €) : 70% DCAM + 30% SPEA</li>
+            <li><strong>Phase 3</strong> (5 000 → 10 000 €) : 60% DCAM + 25% SPEA + 15% AEEM</li>
+            <li><strong>Phase 4</strong> (10 000+ €) : ouverture CTO, NVDA 5%, RKLB 2%</li>
+          </ul>
+          <p style="font-size:11px;color:var(--muted);">L'appli détecte ta phase automatiquement selon tes positions et te le notifiera quand un palier est atteint.</p>
+        </details>
       </div>
     </div>
 
@@ -788,7 +793,7 @@
     <h3 id="addModalTitle">Ajouter une position</h3>
     <div class="form-row">
       <label>Ticker (Yahoo Finance)</label>
-      <input id="f_ticker" placeholder="ex. CW8.PA, RKLB, GC=F" autocapitalize="characters">
+      <input id="f_ticker" placeholder="ex. DCAM.PA, RKLB, GC=F" autocapitalize="characters">
     </div>
     <div class="form-row">
       <label>Nom (optionnel)</label>
@@ -1006,7 +1011,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v3.8";
+const APP_VERSION = "v3.9";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -2195,7 +2200,7 @@ async function generateAutoAlerts() {
         alerts.push({
           kind: "attention", emoji: "🎯", priority: 2,
           title: `${p.ticker} pèse ${part.toFixed(0)}% du portefeuille (limite prudente : ${seuil}%)`,
-          body: `Tu es trop concentré sur ${p.ticker}. <strong>Allège progressivement</strong> ou laisse les ETF diluer en renforçant le socle CW8.PA. Risque ${RISK_LABEL[risk]} (${risk}/5).`,
+          body: `Tu es trop concentré sur ${p.ticker}. <strong>Allège progressivement</strong> ou laisse les ETF diluer en renforçant le socle DCAM. Risque ${RISK_LABEL[risk]} (${risk}/5).`,
         });
       }
     }
@@ -2208,9 +2213,10 @@ async function generateAutoAlerts() {
   const hasCTO = D.positions.some(p => p.devise === "USD" || ["NVDA","RKLB","PLTR","ANET","SMCI","TSLA","AAPL","MSFT","GOOGL","AMZN","META"].includes(p.ticker));
   const ACTIONS_INDIV = ["NVDA","RKLB","PLTR","ANET","SMCI","TSLA","AAPL","MSFT","GOOGL","AMZN","META"];
 
-  // 4. WATCHLIST — opportunités d'achat (UNIQUEMENT si CTO ou Phase 4+)
-  // Sinon (Phase 0-3 sans CTO) : pas pertinent, l'utilisateur ne peut pas acheter ces actions
-  if (hasCTO || totalEtfF >= 10000) for (const w of D.watchlist) {
+  // 4. WATCHLIST — opportunités d'achat (anticipation)
+  // Si pas de CTO et pas Phase 4 : on suggère mais on précise "pour plus tard"
+  const peutAcheterActions = hasCTO || totalEtfF >= 10000;
+  for (const w of D.watchlist) {
     try {
       const q = await getQuote(w.ticker);
       const hist = await fetchYahooHistory(w.ticker, "1y");
@@ -2223,11 +2229,15 @@ async function generateAutoAlerts() {
       // Opportunité d'achat : repli marqué sur titre en tendance haussière
       if (gap200 != null && gap200 < -15 && m50 && m200 && m50 > m200 * 0.95
           && avis && !avis.verdict.startsWith("ÉCARTER") && !avis.verdict.startsWith("ÉVITER")) {
+        const isAction = ACTIONS_INDIV.includes(w.ticker);
+        const noteFuture = (isAction && !peutAcheterActions)
+          ? `<br><br>⏳ <em>Tu n'as pas encore de CTO. <strong>Note cette opportunité pour la Phase 4</strong> (totalETF ≥ 10 000 €). Si la baisse persiste jusque-là, ce sera un bon point d'entrée.</em>`
+          : "";
         alerts.push({
-          kind: "opportunite", emoji: "🟢", priority: 3, ticker: w.ticker,
-          title: `${w.ticker} en repli ${gap200.toFixed(0)}% : fenêtre d'achat`,
-          body: `${w.nom || q.name} affiche un repli marqué tout en restant en tendance haussière long terme. <strong>Configuration d'achat intéressante.</strong><br>📌 <strong>${avis.verdict}</strong> · Taille : <strong>${avis.taille}</strong>.`,
-          action: { label: `💰 J'ai acheté ${w.ticker}`, ticker: w.ticker },
+          kind: "opportunite", emoji: "🟢", priority: isAction && !peutAcheterActions ? 5 : 3, ticker: w.ticker,
+          title: `${w.ticker} en repli ${gap200.toFixed(0)}% : ${peutAcheterActions || !isAction ? "fenêtre d'achat" : "à noter pour plus tard"}`,
+          body: `${w.nom || q.name} affiche un repli marqué tout en restant en tendance haussière long terme. <strong>Configuration d'achat intéressante.</strong><br>📌 <strong>${avis.verdict}</strong> · Taille : <strong>${avis.taille}</strong>.${noteFuture}`,
+          ...(peutAcheterActions || !isAction ? { action: { label: `💰 J'ai acheté ${w.ticker}`, ticker: w.ticker } } : {}),
         });
       }
       // Évolution forte récente : alerte attention
@@ -2320,8 +2330,8 @@ async function generateAutoAlerts() {
     alerts.push({
       kind: "info", emoji: "🌱", priority: 5,
       title: "Tu n'as pas encore commencé",
-      body: `Premier achat recommandé : <strong>100 € de CW8.PA</strong> (Amundi MSCI World). Ouvre l'onglet Positions et clique 💰 J'ai acheté quand c'est fait.`,
-      action: { label: "💰 Premier achat 100 € CW8.PA", ticker: "DCAM.PA", montant: 100 },
+      body: `Premier achat recommandé : <strong>100 € de DCAM</strong> (Amundi PEA MSCI World, ~5,67 €/part = 18 parts). Ouvre l'onglet Positions et clique 💰 J'ai acheté quand c'est fait.`,
+      action: { label: "💰 Premier achat 100 € DCAM", ticker: "DCAM.PA", montant: 100 },
     });
   }
 
@@ -2330,11 +2340,24 @@ async function generateAutoAlerts() {
   if (dates.length) {
     const lastTs = new Date(dates[dates.length - 1]).getTime();
     const days = Math.floor((Date.now() - lastTs) / 86400000);
-    if (days >= 35) {
+    if (days >= 25) {
+      // Suggérer le bon ticker selon la phase
+      const tk = totalEtfF < 1500 ? "DCAM.PA" : (totalEtfF < 5000 ? "SPEA.PA" : "AEEM.PA");
+      const lbl = tk === "DCAM.PA" ? "DCAM (Amundi PEA MSCI World)" : tk === "SPEA.PA" ? "SPEA (iShares S&P 500 PEA)" : "AEEM (Émergents)";
       alerts.push({
-        kind: "info", emoji: "📅", priority: 5,
-        title: `Dernier achat il y a ${days} jours`,
-        body: `Pas d'obligation, mais le DCA mensuel régulier est la stratégie qui marche le mieux long terme. Si ton budget le permet, vois les <strong>Propositions du mois</strong> dans l'onglet Positions.`,
+        kind: "opportunite", emoji: "💰", priority: 3,
+        title: `Achat possible : ${tk} (${days} jours sans achat)`,
+        body: `Tu es à <strong>${fmt.eur(totalEtfF)}</strong> en ETF.<br>Si ton budget le permet ce mois, c'est le bon moment de continuer ton DCA sur <strong>${lbl}</strong>. Mets ce que tu peux : 50, 100, 200 € — tu choisis le montant dans la modale après avoir cliqué.`,
+        action: { label: `💰 J'ai acheté ${tk.replace(".PA","")}`, ticker: tk },
+      });
+    }
+    // Suggestion permanente Phase 1 (pas d'achat depuis 10+ jours mais pas critique)
+    else if (totalEtfF < 1500 && days >= 10) {
+      alerts.push({
+        kind: "info", emoji: "💡", priority: 5,
+        title: `Phase 1 — DCA DCAM en cours`,
+        body: `Tu es à <strong>${fmt.eur(totalEtfF)}</strong> sur 1 500 € visés (Phase 2). Continue régulièrement sur <strong>DCAM</strong> — quand ton budget le permet.`,
+        action: { label: "💰 J'ai acheté DCAM", ticker: "DCAM.PA" },
       });
     }
   }
@@ -2412,7 +2435,7 @@ function renderNiveau() {
   const labels = ["Curieux", "Débutant", "Apprenti", "Investisseur", "Pro"];
   const messages = [
     "Tu commences à explorer. Premier objectif : faire ton premier achat.",
-    `Bravo, tu as commencé ! Continue ton DCA régulier sur CW8.PA jusqu'à 1 500 €.`,
+    `Bravo, tu as commencé ! Continue ton DCA régulier sur DCAM jusqu'à 1 500 €.`,
     `Tu prends le rythme. Maintenant, vise 5 000 € et ajoute le S&P 500 quand tu y es.`,
     `Tu es un investisseur sérieux. Diversifie sur l'Asie + actions IA / spatial selon les phases.`,
     `Niveau Pro atteint. Tu maîtrises l'allocation prudente complète. Continue à apprendre, surveille tes biais.`,
@@ -2431,7 +2454,7 @@ function renderNiveau() {
   // Achievements
   const all = [
     { id: "open_app", emoji: "📱", title: "Ouvrir l'appli", desc: "Tu es là, c'est déjà fait !", check: () => true },
-    { id: "first_buy", emoji: "💰", title: "1er achat", desc: "Acheter ta première position (recommandé : 100 € de CW8.PA)", check: () => u.nbPos >= 1 },
+    { id: "first_buy", emoji: "💰", title: "1er achat", desc: "Acheter ta première position (recommandé : 100 € de DCAM)", check: () => u.nbPos >= 1 },
     { id: "etf_world", emoji: "🌍", title: "Avoir l'ETF World en socle", desc: "DCAM.PA / WPEA.PA dans ton portefeuille", check: () => u.hasETFWorld },
     { id: "dca_3", emoji: "📅", title: "3 achats au compteur", desc: "Régularité dans le DCA", check: () => u.nbTx >= 3 },
     { id: "dca_6mois", emoji: "🗓️", title: "6 mois d'investissement", desc: "Tenir la route sur 6 mois sans paniquer", check: () => u.moisDca >= 6 },
@@ -2468,7 +2491,7 @@ function renderNiveau() {
 
   // Concepts à comprendre selon le niveau
   const concepts = [
-    { level: 0, title: "C'est quoi un ETF ?", desc: "Un panier de centaines/milliers d'actions en 1 seule ligne. Tu achètes 1 part de CW8 = tu détiens un peu de chacune des 1 600 plus grosses entreprises du monde. <strong>Diversification instantanée.</strong>" },
+    { level: 0, title: "C'est quoi un ETF ?", desc: "Un panier de centaines/milliers d'actions en 1 seule ligne. Tu achètes 1 part de DCAM = tu détiens un peu de chacune des 1 600 plus grosses entreprises du monde. <strong>Diversification instantanée.</strong>" },
     { level: 0, title: "C'est quoi le DCA ?", desc: "Dollar Cost Averaging = investir une somme fixe régulièrement (ex. 200 €/mois). <strong>Tu lisses ton point d'entrée</strong>, tu n'as pas besoin de prédire le marché. C'est la stratégie débutant la plus efficace." },
     { level: 1, title: "Qu'est-ce qu'un PEA ?", desc: "Plan d'Épargne en Actions = enveloppe fiscale française. Versements jusqu'à 150 k€. <strong>Après 5 ans : exonération d'impôt sur les plus-values</strong> (sauf 17,2% prélèvements sociaux). Ne le clôture jamais avant 5 ans." },
     { level: 1, title: "ETF capitalisant vs distribuant", desc: "<strong>Capitalisant (Acc)</strong> = les dividendes sont réinvestis automatiquement dans l'ETF. <strong>Distribuant (Dist)</strong> = tu reçois les dividendes en cash. Sur PEA, capitalisant = effet boule de neige optimal." },
@@ -2476,7 +2499,7 @@ function renderNiveau() {
     { level: 2, title: "Tendance haussière / baissière", desc: "Si la moyenne 50 jours est <strong>au-dessus</strong> de la moyenne 200 jours = tendance haussière (golden cross). En dessous = tendance baissière (death cross). C'est un repère, pas une vérité absolue." },
     { level: 3, title: "Concentration et risque", desc: "Une seule ligne ne doit pas dépasser <strong>3-5%</strong> du portefeuille pour une action volatile. Si NVDA explose à +200% et atteint 15% du portefeuille, <strong>il faut alléger</strong> pour reprendre le contrôle du risque." },
     { level: 3, title: "Volatilité annualisée", desc: "C'est la mesure de l'<strong>amplitude des variations</strong>. Un ETF World fait ~15%/an, NVDA ~40%/an, RKLB ~80%/an. Plus c'est élevé, plus tu peux perdre vite (mais aussi gagner)." },
-    { level: 4, title: "Rebalancing trimestriel", desc: "Tous les 3 mois, vérifie que ton allocation correspond toujours à ta cible. Si CW8 est passé de 50% à 65%, c'est qu'il a monté plus que les autres. Tu peux <strong>renforcer les autres</strong> au lieu de vendre CW8." },
+    { level: 4, title: "Rebalancing trimestriel", desc: "Tous les 3 mois, vérifie que ton allocation correspond toujours à ta cible. Si DCAM est passé de 50% à 65%, c'est qu'il a monté plus que les autres. Tu peux <strong>renforcer les autres</strong> au lieu de vendre DCAM." },
     { level: 4, title: "Biais comportementaux", desc: "Le pire ennemi d'un investisseur, c'est <strong>lui-même</strong>. FOMO (acheter trop haut par peur de rater), panic-sell (vendre en bas), confirmation bias. La règle : <strong>règles écrites > émotions</strong>." },
   ];
   const aApprendre = concepts.filter(c => c.level <= u.level + 1).slice(0, 4);
@@ -2537,19 +2560,19 @@ async function renderPropositions() {
   if (phase === 0) {
     props.push({ ticker: "DCAM.PA", part: 100, desc: "1er achat — l'ETF World, le plus diversifié (1 600 entreprises). Mets ce que tu peux : 50 €, 100 €, 200 €." });
   } else if (phase === 1) {
-    props.push({ ticker: "DCAM.PA", part: 100, desc: `Continue à 100% sur CW8.PA jusqu'à ~1 500 € (tu es à ${fmt.eur(total)}).` });
+    props.push({ ticker: "DCAM.PA", part: 100, desc: `Continue à 100% sur DCAM jusqu'à ~1 500 € (tu es à ${fmt.eur(total)}).` });
   } else if (phase === 2) {
     props.push({ ticker: "DCAM.PA", part: 70, desc: "Socle mondial" });
-    props.push({ ticker: "500.PA", part: 30, desc: "Renforcement US" });
+    props.push({ ticker: "SPEA.PA", part: 30, desc: "Renforcement US (S&P 500)" });
   } else if (phase === 3) {
     props.push({ ticker: "DCAM.PA", part: 60, desc: "Socle mondial" });
-    props.push({ ticker: "500.PA", part: 25, desc: "Renforcement US" });
-    props.push({ ticker: "AASI.PA", part: 15, desc: "Asie émergente (Inde, Chine, Corée)" });
+    props.push({ ticker: "SPEA.PA", part: 25, desc: "Renforcement US" });
+    props.push({ ticker: "AEEM.PA", part: 15, desc: "Émergents Asie (Inde, Chine, Corée)" });
   } else {
     // Phase 4 — diversification complète
     props.push({ ticker: "DCAM.PA", part: 50, desc: "Socle mondial" });
-    props.push({ ticker: "500.PA", part: 22, desc: "Renforcement US" });
-    props.push({ ticker: "AASI.PA", part: 8, desc: "Asie émergente" });
+    props.push({ ticker: "SPEA.PA", part: 22, desc: "Renforcement US" });
+    props.push({ ticker: "AEEM.PA", part: 8, desc: "Émergents" });
     props.push({ ticker: "NVDA", part: 6, desc: "IA via leader (CTO requis)" });
     props.push({ ticker: "RKLB", part: 2, desc: "Pari spatial petite ligne (CTO requis)" });
     // Or : on ne propose d'en acheter QUE si l'utilisateur n'en a pas assez
@@ -2570,11 +2593,11 @@ async function renderPropositions() {
       ? `Tu as déjà <strong>${fmt.eur(totalOr)}</strong> en or — bonne couverture. <strong>Maintenant : démarre tes ETF.</strong>`
       : `<strong>Premier achat ETF.</strong> Mets ce que tu peux (50, 100, 200 €).`;
   } else if (phase === 1) {
-    entete = `<strong>Continue 100% sur CW8.PA</strong> jusqu'à 1 500 € investis en ETF. Tu en es à <strong>${fmt.eur(totalEtf)}</strong>.`;
+    entete = `<strong>Continue 100% sur DCAM</strong> jusqu'à 1 500 € investis en ETF. Tu en es à <strong>${fmt.eur(totalEtf)}</strong>.`;
   } else if (phase === 2) {
-    entete = `<strong>Phase 2 — diversification US.</strong> Tu as ${fmt.eur(totalEtf)} en ETF. Répartis chaque achat 70% CW8 + 30% 500.PA.`;
+    entete = `<strong>Phase 2 — diversification US.</strong> Tu as ${fmt.eur(totalEtf)} en ETF. Répartis chaque achat 70% DCAM + 30% SPEA.`;
   } else if (phase === 3) {
-    entete = `<strong>Phase 3 — ajout Asie.</strong> Tu as ${fmt.eur(totalEtf)} en ETF. Répartis 60% CW8 + 25% 500 + 15% AASI.`;
+    entete = `<strong>Phase 3 — ajout Émergents.</strong> Tu as ${fmt.eur(totalEtf)} en ETF. Répartis 60% DCAM + 25% SPEA + 15% AEEM.`;
   } else {
     entete = `<strong>Phase 4 — diversification complète.</strong> ETF = ${fmt.eur(totalEtf)}.`;
   }
@@ -2650,9 +2673,9 @@ async function renderPrevu() {
   const tickersByPhase = [
     ["DCAM.PA"],
     ["DCAM.PA"],
-    ["DCAM.PA","500.PA"],
-    ["DCAM.PA","500.PA","AASI.PA"],
-    ["DCAM.PA","500.PA","AASI.PA","NVDA","RKLB"],
+    ["DCAM.PA","SPEA.PA"],
+    ["DCAM.PA","SPEA.PA","AEEM.PA"],
+    ["DCAM.PA","SPEA.PA","AEEM.PA","NVDA","RKLB"],
   ];
   const tickers = tickersByPhase[phase];
 
@@ -2791,7 +2814,7 @@ function renderRappel() {
 
 async function renderMoment() {
   const el = $("momentZone"); if (!el) return;
-  // On analyse CW8.PA comme baromètre marché global
+  // On analyse DCAM.PA comme baromètre marché global
   el.innerHTML = `<div class="moment-card yellow"><span class="rappel-emoji">📊</span>
     <div class="moment-text"><strong>Conseil du moment</strong> <span class="loader"></span> Analyse en cours…</div></div>`;
   try {
@@ -2969,13 +2992,13 @@ async function renderConseils() {
   if (totalEur < 100) {
     planCards.push(conseilCard("info", "Démarrage — plan recommandé profil prudent",
       `<strong>Pour commencer (premier mois) :</strong><br>
-       1. <strong>50% CW8.PA</strong> (Amundi MSCI World) — socle mondial<br>
-       2. <strong>22% 500.PA</strong> (Amundi S&P 500) — renforcement US<br>
-       3. <strong>8% AASI.PA</strong> (Amundi MSCI EM Asia) — diversification croissance Asie<br>
+       1. <strong>50% DCAM</strong> (Amundi PEA MSCI World) — socle mondial<br>
+       2. <strong>22% SPEA</strong> (iShares S&P 500 PEA) — renforcement US<br>
+       3. <strong>8% AEEM</strong> (Amundi MSCI Emerging) — diversification croissance Émergents<br>
        4. <strong>6% NVDA</strong> — exposition IA via le leader large cap (le plus solide du secteur)<br>
        5. <strong>2% RKLB</strong> — pari spatial petite ligne, en attendant SpaceX<br>
        6. <strong>12% Or physique</strong> (Godot & Fils) — couverture inflation/crise<br><br>
-       <strong>Démarre par 200-500 € par mois en DCA</strong> sur les ETF (CW8 + 500 + AASI), et achète les actions ponctuellement quand le timing est bon (voir conseils ci-dessous). L'or se constitue progressivement (lingotin de 50g typiquement).`));
+       <strong>Démarre par 200-500 € par mois en DCA</strong> sur les ETF (DCAM + SPEA + AEEM selon la phase), et achète les actions ponctuellement quand le timing est bon (voir conseils ci-dessous). L'or se constitue progressivement (lingotin de 50g typiquement).`));
   } else {
     // Comparer allocation actuelle vs cible et générer propositions
     const ecarts = [];
@@ -3028,7 +3051,7 @@ async function renderConseils() {
       planCards.push(propHtml);
     } else {
       planCards.push(conseilCard("hold", "Allocation conforme à la cible",
-        `Tes positions sont alignées avec le plan profil prudent. <strong>Continue le DCA mensuel</strong> sur CW8 + 500 + AASI, et surveille les opportunités d'achat ponctuel sur la watchlist.`));
+        `Tes positions sont alignées avec le plan profil prudent. <strong>Continue le DCA mensuel</strong> sur DCAM + SPEA + AEEM (selon ta phase), et surveille les opportunités d'achat ponctuel sur la watchlist.`));
     }
   }
 

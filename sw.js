@@ -1,6 +1,6 @@
 // Service Worker — Portfolio Tracker
 // Stratégie : network-first pour HTML/JSON, cache-first pour assets statiques
-const CACHE = "invest-v29";
+const CACHE = "invest-v30";
 const ASSETS = [
   "./",
   "./index.html",
