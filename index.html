@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Portfolio Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
 <style>
   :root {
     --bg: #0e1014;
@@ -330,6 +331,40 @@
   }
   .alerte-auto-action button { padding: 5px 10px; font-size: 11px; min-height: 28px; }
 
+  /* --- Coach markdown --- */
+  .coach-report { padding: 14px 16px; background: var(--bg-2); border: 1px solid var(--border);
+                  border-radius: 12px; margin-bottom: 12px; }
+  .coach-report .coach-meta { font-size: 11px; color: var(--muted); margin-bottom: 10px;
+                              text-transform: uppercase; letter-spacing: 0.5px; }
+  .coach-md { font-size: 13px; line-height: 1.65; color: var(--text); }
+  .coach-md h1, .coach-md h2 { color: var(--accent); font-size: 16px; margin: 16px 0 8px 0; font-weight: 700; }
+  .coach-md h1 { font-size: 18px; }
+  .coach-md h3 { color: var(--text); font-size: 14px; margin: 12px 0 6px 0; font-weight: 600; }
+  .coach-md p { margin: 6px 0; }
+  .coach-md strong { color: var(--text); font-weight: 600; }
+  .coach-md ul, .coach-md ol { padding-left: 22px; margin: 6px 0; }
+  .coach-md li { margin: 3px 0; }
+  .coach-md table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
+  .coach-md th { text-align: left; padding: 8px 6px; background: var(--bg-3); color: var(--muted);
+                 font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+  .coach-md td { padding: 8px 6px; border-bottom: 1px solid var(--border); }
+  .coach-md code { background: var(--bg-3); padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+  .coach-md hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+  .coach-md a { color: var(--blue); }
+
+  .coach-history-item {
+    padding: 10px 14px; background: var(--bg-3); border-radius: 8px; margin-bottom: 6px;
+    cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+  }
+  .coach-history-item:hover { background: var(--bg-4); }
+  .coach-history-date { font-size: 11px; color: var(--muted); }
+  .coach-history-title { font-weight: 600; font-size: 13px; }
+
+  .coach-badge {
+    display: inline-block; background: var(--accent); color: #000; padding: 2px 8px;
+    border-radius: 10px; font-size: 10px; font-weight: 700; margin-left: 6px;
+  }
+
   /* --- Conseils --- */
   .conseil {
     padding: 12px 14px; border-radius: 10px; margin-bottom: 8px;
@@ -432,6 +467,7 @@
   <div class="tab" data-tab="charts" onclick="openTab('charts')">Graphiques</div>
   <div class="tab" data-tab="alerts" onclick="openTab('alerts')">🔔 Alertes</div>
   <div class="tab" data-tab="watchlist" onclick="openTab('watchlist')">Watchlist</div>
+  <div class="tab" data-tab="coach" onclick="openTab('coach')">📰 Coach</div>
   <div class="tab" data-tab="conseils" onclick="openTab('conseils')">💡 Conseils</div>
   <div class="tab" data-tab="niveau" onclick="openTab('niveau')">📊 Niveau</div>
   <div class="tab" data-tab="aide" onclick="openTab('aide')">❓ Aide</div>
@@ -542,6 +578,19 @@
         Vérifie toujours toi-même avant d'acheter/vendre, et n'investis que ce que tu peux te permettre de perdre.
       </p>
     </div>
+  </section>
+
+  <!-- COACH / RAPPORTS -->
+  <section id="tab-coach" class="hidden">
+    <div class="card" style="background:linear-gradient(135deg,rgba(79,140,255,0.10),rgba(212,175,55,0.06));border-color:rgba(79,140,255,0.4);">
+      <h2 style="color:var(--blue);">📰 Rapports coach IA</h2>
+      <div style="font-size:13px;color:var(--text);line-height:1.6;">
+        Les analyses de marché et conseils stratégiques que je rédige pour toi (via Claude Code) sont stockés ici.
+        Pour demander un nouveau rapport, dis-moi <strong>"check marché"</strong>, <strong>"avis [TICKER]"</strong>, ou <strong>"stratégie [durée]"</strong>.
+      </div>
+    </div>
+    <div id="coachLatest"></div>
+    <div id="coachHistory"></div>
   </section>
 
   <!-- NIVEAU / APPRENTISSAGE -->
@@ -880,7 +929,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v1.9";
+const APP_VERSION = "v2.0";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -903,6 +952,7 @@ let D = {
   positions: [],
   alertes: [],
   watchlist: [],
+  analyses: [],   // rapports coach IA
   deletedIds: [],
   lastModified: 0,
   schemaVersion: 1,
@@ -1530,12 +1580,57 @@ function closeModal(id) { $(id).classList.remove("active"); }
 // ============================================================================
 function openTab(name) {
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
-  ["portfolio","charts","alerts","watchlist","conseils","niveau","aide","settings"].forEach(s =>
+  ["portfolio","charts","alerts","watchlist","conseils","coach","niveau","aide","settings"].forEach(s =>
     $("tab-" + s).classList.toggle("hidden", s !== name));
   if (name === "charts") loadHistory();
   if (name === "alerts") renderAlertsAuto();
   if (name === "niveau") renderNiveau();
   if (name === "conseils") renderConseils();
+  if (name === "coach") renderCoach();
+}
+
+// ============================================================================
+// COACH — rendu des rapports IA depuis D.analyses
+// ============================================================================
+function renderCoach() {
+  const elL = $("coachLatest"); const elH = $("coachHistory");
+  if (!elL) return;
+  if (!D.analyses) D.analyses = [];
+  if (!D.analyses.length) {
+    elL.innerHTML = `<div class="card"><div class="empty">
+      Aucun rapport pour l'instant.<br><br>
+      Demande à Claude Code (sur PC) <strong>"check marché"</strong>, <strong>"avis [TICKER]"</strong>, ou <strong>"stratégie [durée]"</strong>.
+      Les rapports apparaîtront ici après le prochain pull.
+    </div></div>`;
+    elH.innerHTML = "";
+    return;
+  }
+  // Tri date décroissante
+  const sorted = [...D.analyses].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const last = sorted[0];
+  const mdHtml = (typeof marked !== "undefined") ? marked.parse(last.contenu_md || "") : `<pre>${last.contenu_md || ""}</pre>`;
+  elL.innerHTML = `<div class="coach-report">
+    <div class="coach-meta">📅 ${last.date} · ${last.type || "rapport"} ${sorted.length === 1 ? '<span class="coach-badge">DERNIER</span>' : '<span class="coach-badge">LE PLUS RÉCENT</span>'}</div>
+    <div class="coach-md">${mdHtml}</div>
+  </div>`;
+  if (sorted.length > 1) {
+    elH.innerHTML = `<div class="card"><h2>Historique</h2>
+      ${sorted.slice(1).map((a, i) => `<div class="coach-history-item" onclick="openCoachReport(${D.analyses.indexOf(a)})">
+        <div><div class="coach-history-title">${a.titre || a.type}</div><div class="coach-history-date">${a.date}</div></div>
+        <span style="color:var(--muted);">▸</span>
+      </div>`).join("")}
+    </div>`;
+  } else { elH.innerHTML = ""; }
+}
+function openCoachReport(idx) {
+  const a = D.analyses[idx]; if (!a) return;
+  const mdHtml = (typeof marked !== "undefined") ? marked.parse(a.contenu_md || "") : `<pre>${a.contenu_md || ""}</pre>`;
+  $("coachLatest").innerHTML = `<div class="coach-report">
+    <div class="coach-meta">📅 ${a.date} · ${a.type || "rapport"} <span class="coach-badge" style="background:var(--blue);color:#fff;">ARCHIVE</span>
+      <button class="ghost" onclick="renderCoach()" style="float:right;padding:2px 8px;font-size:11px;min-height:24px;">↻ Voir le dernier</button>
+    </div>
+    <div class="coach-md">${mdHtml}</div>
+  </div>`;
 }
 
 // ============================================================================
@@ -1645,7 +1740,7 @@ async function ghPullNow() {
 function mergeData(local, remote) {
   // Merge intelligent : union par ID, tombstones, dernier modifié gagne au niveau global
   const out = {
-    positions: [], alertes: [], watchlist: [],
+    positions: [], alertes: [], watchlist: [], analyses: [],
     deletedIds: [...(local.deletedIds || []), ...(remote.deletedIds || [])]
       .filter((v,i,a) => a.findIndex(x => x.id === v.id) === i),
     lastModified: Math.max(local.lastModified || 0, remote.lastModified || 0),
@@ -1653,7 +1748,7 @@ function mergeData(local, remote) {
   };
   const deleted = new Set(out.deletedIds.map(d => d.id));
   // Pour chaque collection : union par ID, en privilégiant local pour les doublons
-  for (const key of ["positions", "alertes", "watchlist"]) {
+  for (const key of ["positions", "alertes", "watchlist", "analyses"]) {
     const map = new Map();
     for (const r of (remote[key] || [])) if (!deleted.has(r.id)) map.set(r.id, r);
     for (const l of (local[key] || [])) if (!deleted.has(l.id)) map.set(l.id, { ...map.get(l.id), ...l });
@@ -2251,10 +2346,27 @@ function proposExecute(ticker, montant) {
 // ============================================================================
 // RAPPEL D'ACHAT MENSUEL & CONSEIL DU MOMENT
 // ============================================================================
+function renderCoachBadge() {
+  // Badge en tête de Positions si nouveau rapport coach (< 7 jours)
+  const el = $("rappelZone"); if (!el) return;
+  if (!D.analyses || !D.analyses.length) return null;
+  const sorted = [...D.analyses].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const last = sorted[0];
+  const daysAgo = last.date ? Math.floor((Date.now() - new Date(last.date).getTime()) / 86400000) : 999;
+  if (daysAgo > 7) return null;
+  return `<div class="rappel-card warn" style="cursor:pointer;" onclick="openTab('coach')">
+    <span class="rappel-emoji">📰</span>
+    <div class="rappel-text"><strong>Nouveau rapport coach — ${last.date}</strong><br>
+      ${last.titre || last.type} · clique pour lire</div>
+  </div>`;
+}
+
 function renderRappel() {
   const el = $("rappelZone"); if (!el) return;
+  // Coach badge en priorité (si récent)
+  const coachHtml = renderCoachBadge();
   if (!D.positions.length) {
-    el.innerHTML = `<div class="rappel-card info">
+    el.innerHTML = (coachHtml || "") + `<div class="rappel-card info">
       <span class="rappel-emoji">🌱</span>
       <div class="rappel-text"><strong>Tu n'as encore rien acheté.</strong><br>
         Va dans l'onglet 💡 Conseils pour voir le plan de démarrage personnalisé.</div>
@@ -2268,13 +2380,13 @@ function renderRappel() {
   const lastTs = new Date(lastDate).getTime();
   const days = Math.floor((Date.now() - lastTs) / (1000 * 60 * 60 * 24));
   if (days >= 30) {
-    el.innerHTML = `<div class="rappel-card warn">
+    el.innerHTML = (coachHtml || "") + `<div class="rappel-card warn">
       <span class="rappel-emoji">🔔</span>
       <div class="rappel-text"><strong>Pas d'achat depuis ${days} jours.</strong><br>
         Rien d'obligatoire — juste un rappel discret. Si ton budget du mois le permet, c'est peut-être le moment.</div>
     </div>`;
   } else {
-    el.innerHTML = `<div class="rappel-card info">
+    el.innerHTML = (coachHtml || "") + `<div class="rappel-card info">
       <span class="rappel-emoji">✅</span>
       <div class="rappel-text"><strong>Dernier achat : il y a ${days} jour${days > 1 ? "s" : ""}.</strong><br>
         Tu es à jour de ton DCA mensuel.</div>
