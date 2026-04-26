@@ -708,6 +708,13 @@
       </div>
       <div class="setting-row">
         <div>
+          <div class="setting-label">📲 Lien d'install rapide</div>
+          <div class="setting-sub">Pour configurer un autre appareil (iPad, iPhone) en un clic. Copie le lien et envoie-le toi par mail/AirDrop. ⚠ Ne le partage à personne.</div>
+        </div>
+        <button onclick="generateInstallLink()">🔗 Lien</button>
+      </div>
+      <div class="setting-row">
+        <div>
           <div class="setting-label">Forcer push maintenant</div>
           <div class="setting-sub">Envoie l'état local sur GitHub</div>
         </div>
@@ -992,7 +999,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v3.0";
+const APP_VERSION = "v3.1";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1789,6 +1796,41 @@ function openCoachReport(idx) {
 // SYNC GITHUB (Contents API)
 // ============================================================================
 function getToken() { return localStorage.getItem(TOKEN_KEY); }
+
+async function generateInstallLink() {
+  const tok = getToken();
+  if (!tok) { toast("Configure d'abord le token GitHub", "error"); return; }
+  const encoded = btoa(unescape(encodeURIComponent(tok)));
+  const link = `https://dume2309.github.io/invest/#config=${encoded}`;
+  try {
+    await navigator.clipboard.writeText(link);
+    toast("✅ Lien copié ! Envoie-toi-le sur ton iPad (mail / SMS / AirDrop)", "success");
+  } catch {
+    // Fallback : afficher le lien dans une popup pour copier manuellement
+    prompt("Copie ce lien et envoie-le sur ton autre appareil :", link);
+  }
+}
+
+// Détection automatique au boot d'un lien d'install
+function checkInstallLink() {
+  const hash = location.hash;
+  if (!hash.startsWith("#config=")) return false;
+  const encoded = hash.slice(8);
+  try {
+    const tok = decodeURIComponent(escape(atob(encoded)));
+    if (confirm("Importer la configuration depuis ce lien ?\n\nLe token GitHub sera enregistré et tes données seront récupérées.")) {
+      localStorage.setItem(TOKEN_KEY, tok);
+      // Nettoyer l'URL pour ne pas laisser le token visible
+      history.replaceState(null, "", location.pathname);
+      toast("Token importé — synchronisation en cours…", "success");
+      return true;
+    }
+  } catch (e) {
+    toast("Lien d'install invalide", "error");
+  }
+  history.replaceState(null, "", location.pathname);
+  return false;
+}
 
 function openTokenModal() {
   $("t_token").value = getToken() || "";
@@ -3081,6 +3123,8 @@ function bootstrapWatchlist() {
 window.addEventListener("DOMContentLoaded", async () => {
   $("versionInfo").textContent = APP_VERSION;
   loadLocal();
+  // Vérifier si on arrive depuis un lien d'install rapide (#config=...)
+  checkInstallLink();
   updateTokenStatus();
   // Pull bloquant au boot si token présent (avant tout rendu/save)
   if (getToken()) {
