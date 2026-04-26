@@ -1011,7 +1011,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v4.1";
+const APP_VERSION = "v4.2";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -2364,11 +2364,12 @@ async function generateAutoAlerts() {
   }
 
   // 8. SURVEILLANCE OR — alerte si vente partielle rentable nette d'impôt
-  // Seuil : 2 000 € de vente nets avec +200 € de gain APRÈS impôt 36,2% (sur PV réelle)
+  // Seuil : 2 000 € de vente nets avec +400 € de gain APRÈS impôt 36,2% (sur PV réelle)
+  // → demande une hausse cours spot d'environ +45% vs PRU
   const orPositions = valids.filter(p => p.type === "Or" && p.valeur_godot != null);
   if (orPositions.length > 0) {
     const objectifVente = 2000;
-    const gainNetMin = 200; // gain min APRÈS impôt pour déclencher
+    const gainNetMin = 400; // gain min APRÈS impôt pour déclencher (~30-45% hausse spot)
     const tauxImpotPVReelle = 0.362;
     // Privilégier Napoléons (meilleur prix de revente)
     const napos = orPositions.find(p => p.or_type === "napoleon") || orPositions[0];
@@ -2418,15 +2419,19 @@ async function generateAutoAlerts() {
       // → 2000/cours_godot * (cours_godot - pru) * 0.638 >= 200
       // → (cours_godot - pru) / cours_godot >= 200 / (2000 * 0.638) = 0.1568
       // → cours_godot >= pru / (1 - 0.1568) = pru / 0.843
-      const seuilCoursGodot = pruParG / (1 - 200 / (2000 * (1 - 0.362)));
+      const seuilCoursGodot = pruParG / (1 - 400 / (2000 * (1 - 0.362)));
       const seuilSpot = seuilCoursGodot / 0.97; // décote Godot Napoléons
-      const ecartPct = ((seuilSpot - (valGodotParG / 0.97)) / (valGodotParG / 0.97)) * 100;
+      const coursSpotActuel = valGodotParG / 0.97;
+      const ecartPct = ((seuilSpot - coursSpotActuel) / coursSpotActuel) * 100;
       alerts.push({
         kind: "info", emoji: "🔍", priority: 5,
         title: `Surveillance or — vente non rentable actuellement`,
-        body: `Pour vendre 2 000 € de Napoléons avec <strong>+200 € net après impôt 36,2%</strong>, il faut que le cours spot or atteigne <strong>${seuilSpot.toFixed(0)} €/g</strong> (cours actuel : ${(valGodotParG / 0.97).toFixed(0)} €/g, à <strong>+${ecartPct.toFixed(1)}%</strong>).<br><br>
-          🔔 Une alerte automatique se déclenchera dès que ce seuil est franchi.<br><br>
-          <em>Alternative : attendre 3+ ans détention pour bénéficier de l'abattement 5%/an (réduit l'impôt).</em>`,
+        body: `Pour vendre 2 000 € de Napoléons avec <strong>+400 € net après impôt 36,2%</strong> (objectif réaliste), il faut que le cours spot or atteigne <strong>${seuilSpot.toFixed(0)} €/g</strong>.<br><br>
+          • Cours spot actuel : <strong>${coursSpotActuel.toFixed(0)} €/g</strong><br>
+          • Hausse nécessaire : <strong>+${ecartPct.toFixed(1)}%</strong><br>
+          • Cible : ~+45% sur le cours spot par rapport à ton PRU<br><br>
+          🔔 Alerte automatique dès que ce seuil est franchi.<br><br>
+          <em>💡 Alternative fiscale : attendre 3+ ans pour bénéficier de l'abattement 5%/an (réduit l'impôt à 31,2% en année 3, 16,2% en année 8, 0% à partir de l'année 22).</em>`,
       });
     }
   }
