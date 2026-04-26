@@ -1011,7 +1011,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v4.2";
+const APP_VERSION = "v4.3";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1423,9 +1423,26 @@ async function renderWatchlist() {
 function renderDonut(valos) {
   const valid = valos.filter(p => !p.error);
   if (!valid.length) { if (donutChart) { donutChart.destroy(); donutChart = null; } return; }
-  const labels = valid.map(p => p.ticker);
+  // Label : nom court parlant (Lingots/Napoléons distincts)
+  const labels = valid.map(p => {
+    if (p.type === "Or") {
+      if (p.or_type === "lingot") return "Or — Lingots";
+      if (p.or_type === "napoleon") return "Or — Napoléons";
+      return "Or";
+    }
+    return p.ticker;
+  });
   const data = valid.map(p => p.valeur_eur);
-  const colors = valid.map(p => p.type === "ETF" ? "#4f8cff" : p.type === "Action" ? "#26d07c" : p.type === "Or" ? "#d4af37" : "#8a94a6");
+  const colors = valid.map(p => {
+    if (p.type === "ETF") return "#4f8cff";
+    if (p.type === "Action") return "#26d07c";
+    if (p.type === "Or") {
+      if (p.or_type === "lingot") return "#d4af37";    // or classique
+      if (p.or_type === "napoleon") return "#b8860b";  // or vieilli (Napoléon)
+      return "#daa520";                                  // or par défaut
+    }
+    return "#8a94a6";
+  });
   if (donutChart) donutChart.destroy();
   const ctx = $("donutChart"); if (!ctx) return;
   donutChart = new Chart(ctx, {
