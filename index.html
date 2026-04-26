@@ -2,7 +2,13 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0e1014">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Portfolio">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Portfolio Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
@@ -10,137 +16,172 @@
     --bg: #0e1014;
     --bg-2: #161a22;
     --bg-3: #1d222c;
+    --bg-4: #252b38;
     --border: #262c38;
     --text: #e6e8ec;
     --muted: #8a94a6;
-    --accent: #d4af37; /* or */
+    --accent: #d4af37;
     --green: #26d07c;
     --red: #ef4f4f;
     --blue: #4f8cff;
   }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0; padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-    background: var(--bg); color: var(--text);
-    font-size: 14px;
+    background: var(--bg); color: var(--text); font-size: 14px;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior: none;
   }
-  a { color: var(--blue); text-decoration: none; }
   button {
     cursor: pointer; border: none; background: var(--bg-3); color: var(--text);
-    padding: 8px 14px; border-radius: 6px; font-size: 13px;
-    transition: background .15s;
+    padding: 9px 14px; border-radius: 8px; font-size: 13px;
+    transition: background .15s; font-family: inherit;
+    min-height: 36px;
   }
-  button:hover { background: var(--border); }
+  button:active { background: var(--border); }
   button.primary { background: var(--accent); color: #000; font-weight: 600; }
-  button.primary:hover { background: #e6c14b; }
-  button.danger { background: transparent; color: var(--red); padding: 4px 8px; }
-  button.danger:hover { background: rgba(239,79,79,0.1); }
-  input, select {
-    background: var(--bg-2); color: var(--text); border: 1px solid var(--border);
-    padding: 8px 10px; border-radius: 6px; font-size: 13px;
-    width: 100%;
+  button.primary:active { background: #b8951f; }
+  button.danger { background: transparent; color: var(--red); padding: 6px 10px; font-size: 18px; min-height:32px; }
+  button.danger:active { background: rgba(239,79,79,0.15); }
+  button.ghost { background: transparent; color: var(--muted); padding: 6px 10px; }
+  input, select, textarea {
+    background: var(--bg-3); color: var(--text); border: 1px solid var(--border);
+    padding: 10px 12px; border-radius: 8px; font-size: 15px;
+    width: 100%; font-family: inherit;
+    -webkit-appearance: none; appearance: none;
   }
   input:focus, select:focus { outline: none; border-color: var(--accent); }
 
-  /* --- Layout --- */
+  /* --- Header --- */
   header {
-    padding: 18px 28px; border-bottom: 1px solid var(--border);
-    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
-    background: var(--bg-2);
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    background: var(--bg-2); position: sticky; top: 0; z-index: 50;
+    padding-top: calc(14px + env(safe-area-inset-top));
   }
-  header h1 {
-    margin: 0; font-size: 18px; font-weight: 600; letter-spacing: 0.5px;
+  .h-row1 {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px; gap: 12px;
   }
-  header h1 span { color: var(--accent); }
-  .header-stats { display: flex; gap: 28px; align-items: center; flex-wrap: wrap; }
-  .stat { display: flex; flex-direction: column; }
-  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
-  .stat-value { font-size: 20px; font-weight: 600; margin-top: 2px; }
-  .stat-value.big { font-size: 26px; }
+  .h-title { font-size: 17px; font-weight: 700; letter-spacing: 0.3px; }
+  .h-title span { color: var(--accent); }
+  .h-actions { display: flex; gap: 6px; align-items: center; }
+  .h-actions button { padding: 7px 10px; font-size: 13px; min-height: 32px; }
+
+  .h-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  @media (max-width: 500px) { .h-stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat {
+    background: var(--bg-3); padding: 10px 12px; border-radius: 8px;
+    display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  }
+  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+  .stat-value { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums;
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pos { color: var(--green); }
   .neg { color: var(--red); }
 
-  main {
-    padding: 24px 28px; max-width: 1600px; margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 24px;
+  /* --- Tabs --- */
+  .tabs {
+    display: flex; gap: 2px; padding: 8px 12px; background: var(--bg-2);
+    border-bottom: 1px solid var(--border); overflow-x: auto; -webkit-overflow-scrolling: touch;
   }
-  @media (max-width: 1100px) {
-    main { grid-template-columns: 1fr; }
+  .tab {
+    padding: 8px 14px; border-radius: 7px; color: var(--muted); font-size: 13px;
+    cursor: pointer; white-space: nowrap; font-weight: 500;
   }
+  .tab.active { background: var(--bg-3); color: var(--accent); }
 
+  /* --- Cards --- */
+  main { padding: 14px; max-width: 1200px; margin: 0 auto; }
   .card {
     background: var(--bg-2); border: 1px solid var(--border);
-    border-radius: 10px; padding: 18px;
+    border-radius: 12px; padding: 14px; margin-bottom: 14px;
   }
   .card h2 {
-    font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px;
-    color: var(--muted); margin: 0 0 14px 0; font-weight: 600;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--muted); margin: 0 0 12px 0; font-weight: 600;
     display: flex; justify-content: space-between; align-items: center;
   }
-  .card h2 .actions { display: flex; gap: 8px; }
 
-  /* --- Tableau --- */
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th {
-    text-align: left; font-weight: 500; color: var(--muted);
-    padding: 10px 8px; border-bottom: 1px solid var(--border);
-    font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+  /* --- Liste positions (cards mobile) --- */
+  .pos-item {
+    background: var(--bg-3); border-radius: 10px; padding: 12px;
+    margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px;
   }
-  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  td {
-    padding: 12px 8px; border-bottom: 1px solid var(--border);
-  }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: rgba(255,255,255,0.02); }
-  .ticker-cell { font-weight: 600; color: var(--accent); }
+  .pos-row { display: flex; justify-content: space-between; align-items: center; }
+  .pos-ticker { font-weight: 700; color: var(--accent); font-size: 15px; }
+  .pos-name { font-size: 12px; color: var(--muted); margin-top: 1px;
+              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+  .pos-value { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pos-pv { font-size: 13px; font-variant-numeric: tabular-nums; }
+  .pos-meta { font-size: 11px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
   .type-badge {
-    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    display: inline-block; padding: 2px 7px; border-radius: 4px;
     font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
-    background: var(--bg-3); color: var(--muted);
+    background: var(--bg-4); color: var(--muted); margin-left: 6px;
   }
   .type-badge.ETF { background: rgba(79,140,255,0.15); color: var(--blue); }
   .type-badge.Action { background: rgba(38,208,124,0.15); color: var(--green); }
-  .type-badge.Or { background: rgba(212,175,55,0.15); color: var(--accent); }
+  .type-badge.Or { background: rgba(212,175,55,0.18); color: var(--accent); }
 
   /* --- Charts --- */
-  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-  @media (max-width: 800px) { .charts-row { grid-template-columns: 1fr; } }
-  .chart-wrap { height: 280px; position: relative; }
+  .charts { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 800px) { .charts { grid-template-columns: 1fr 1fr; } }
+  .chart-wrap { height: 260px; position: relative; }
 
-  /* --- Sidebar --- */
-  aside { display: flex; flex-direction: column; gap: 20px; }
-  .alert-item, .watchlist-item {
-    padding: 12px; background: var(--bg-3); border-radius: 8px;
-    margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+  /* --- Alertes --- */
+  .alert-item {
+    padding: 10px 12px; background: var(--bg-3); border-radius: 8px;
+    margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;
     gap: 8px;
   }
-  .alert-item.declenchee { border-left: 3px solid var(--red); }
-  .alert-info { flex: 1; }
+  .alert-item.declenchee {
+    border-left: 3px solid var(--red); background: rgba(239,79,79,0.08);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100% { background: rgba(239,79,79,0.08); } 50% { background: rgba(239,79,79,0.18); } }
+  .alert-info { flex: 1; min-width: 0; }
   .alert-info .ticker { font-weight: 600; color: var(--accent); }
   .alert-seuils { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
   /* --- Modal --- */
   .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-    display: none; align-items: center; justify-content: center;
-    z-index: 100;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    display: none; align-items: flex-end; justify-content: center; z-index: 100;
   }
   .modal-overlay.active { display: flex; }
+  @media (min-width: 600px) { .modal-overlay.active { align-items: center; } }
   .modal {
-    background: var(--bg-2); border: 1px solid var(--border);
-    border-radius: 12px; padding: 24px; width: 95%; max-width: 460px;
+    background: var(--bg-2); border-radius: 16px 16px 0 0;
+    padding: 20px; width: 100%; max-width: 480px;
+    max-height: 90vh; overflow-y: auto;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
   }
-  .modal h3 { margin: 0 0 16px 0; font-size: 16px; }
+  @media (min-width: 600px) { .modal { border-radius: 16px; } }
+  .modal h3 { margin: 0 0 14px 0; font-size: 17px; }
   .form-row { margin-bottom: 12px; }
   .form-row label {
     display: block; font-size: 11px; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px;
   }
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .modal-actions button { flex: 1; min-width: 100px; }
+
+  /* --- Toast --- */
+  #toast {
+    position: fixed; bottom: calc(20px + env(safe-area-inset-bottom));
+    left: 50%; transform: translateX(-50%) translateY(100px);
+    background: var(--bg-3); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 16px; border-radius: 24px;
+    font-size: 13px; transition: transform .25s; z-index: 200;
+    max-width: 90%; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.error { border-color: var(--red); color: var(--red); }
+  #toast.success { border-color: var(--green); color: var(--green); }
 
   /* --- Loader --- */
   .loader {
@@ -150,151 +191,311 @@
     vertical-align: middle;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .empty { text-align: center; color: var(--muted); padding: 24px; font-size: 13px; }
+  .empty { text-align: center; color: var(--muted); padding: 24px 12px; font-size: 13px; }
+  .sync-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--muted);
+    display: inline-block; margin-right: 4px; vertical-align: middle;
+  }
+  .sync-dot.ok { background: var(--green); }
+  .sync-dot.warn { background: var(--accent); }
+  .sync-dot.err { background: var(--red); }
+
+  /* --- Settings --- */
+  .setting-row {
+    padding: 12px 14px; background: var(--bg-3); border-radius: 8px;
+    margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+    gap: 10px;
+  }
+  .setting-label { font-size: 13px; }
+  .setting-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .hidden { display: none !important; }
+
+  /* --- Conseils --- */
+  .conseil {
+    padding: 12px 14px; border-radius: 10px; margin-bottom: 8px;
+    background: var(--bg-3); border-left: 4px solid var(--muted);
+  }
+  .conseil.action-buy { border-left-color: var(--green); background: rgba(38,208,124,0.06); }
+  .conseil.action-sell { border-left-color: var(--red); background: rgba(239,79,79,0.06); }
+  .conseil.action-hold { border-left-color: var(--blue); background: rgba(79,140,255,0.06); }
+  .conseil.action-warn { border-left-color: var(--accent); background: rgba(212,175,55,0.07); }
+  .conseil.action-info { border-left-color: var(--muted); }
+  .conseil-head {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 8px; margin-bottom: 6px; flex-wrap: wrap;
+  }
+  .conseil-action {
+    font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .conseil-action.buy { background: var(--green); color: #000; }
+  .conseil-action.sell { background: var(--red); color: #fff; }
+  .conseil-action.hold { background: var(--blue); color: #fff; }
+  .conseil-action.warn { background: var(--accent); color: #000; }
+  .conseil-action.info { background: var(--bg-4); color: var(--muted); }
+  .conseil-titre { font-weight: 600; font-size: 14px; }
+  .conseil-explication {
+    font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 6px;
+  }
+  .risk-box {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    background: var(--bg-4); border-radius: 8px; margin: 8px 0;
+  }
+  .risk-bar {
+    display: inline-flex; gap: 3px; vertical-align: middle;
+  }
+  .risk-bar span {
+    width: 12px; height: 22px; background: var(--bg-2); border-radius: 2px;
+    border: 1px solid var(--border);
+  }
+  .risk-bar span.on1 { background: var(--green); border-color: var(--green); }
+  .risk-bar span.on2 { background: #9ed05a; border-color: #9ed05a; }
+  .risk-bar span.on3 { background: var(--accent); border-color: var(--accent); }
+  .risk-bar span.on4 { background: #f08d3a; border-color: #f08d3a; }
+  .risk-bar span.on5 { background: var(--red); border-color: var(--red); }
+  .risk-label {
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .risk-1 { color: var(--green); }
+  .risk-2 { color: #9ed05a; }
+  .risk-3 { color: var(--accent); }
+  .risk-4 { color: #f08d3a; }
+  .risk-5 { color: var(--red); }
+
+  .risk-banner {
+    padding: 14px 16px; border-radius: 12px; margin-bottom: 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    border: 2px solid;
+  }
+  .risk-banner.r1, .risk-banner.r2 { background: rgba(38,208,124,0.08); border-color: var(--green); }
+  .risk-banner.r3 { background: rgba(212,175,55,0.08); border-color: var(--accent); }
+  .risk-banner.r4, .risk-banner.r5 { background: rgba(239,79,79,0.08); border-color: var(--red); }
+  .risk-banner-title { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .risk-banner-value { font-size: 22px; font-weight: 700; }
+
+  .risk-pill {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    border: 1.5px solid;
+  }
+  .risk-pill.r1 { color: var(--green); border-color: var(--green); background: rgba(38,208,124,0.1); }
+  .risk-pill.r2 { color: #9ed05a; border-color: #9ed05a; background: rgba(158,208,90,0.1); }
+  .risk-pill.r3 { color: var(--accent); border-color: var(--accent); background: rgba(212,175,55,0.1); }
+  .risk-pill.r4 { color: #f08d3a; border-color: #f08d3a; background: rgba(240,141,58,0.1); }
+  .risk-pill.r5 { color: var(--red); border-color: var(--red); background: rgba(239,79,79,0.1); }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>📈 Portfolio <span>Tracker</span></h1>
-  <div class="header-stats">
-    <div class="stat">
-      <div class="stat-label">Valeur totale</div>
-      <div class="stat-value big" id="totalValue">—</div>
+  <div class="h-row1">
+    <div class="h-title">📈 Portfolio <span>Tracker</span></div>
+    <div class="h-actions">
+      <span id="syncStatus" title="Sync"><span class="sync-dot" id="syncDot"></span><span id="syncTime" style="font-size:11px;color:var(--muted);"></span></span>
+      <button onclick="refreshAll()" id="btnRefresh">↻</button>
+      <button onclick="openTab('settings')">⚙️</button>
     </div>
-    <div class="stat">
-      <div class="stat-label">PV/MV €</div>
-      <div class="stat-value" id="totalPv">—</div>
+  </div>
+  <div class="h-stats">
+    <div class="stat"><span class="stat-label">Valeur</span><span class="stat-value" id="totalValue">—</span></div>
+    <div class="stat"><span class="stat-label">PV €</span><span class="stat-value" id="totalPv">—</span></div>
+    <div class="stat"><span class="stat-label">PV %</span><span class="stat-value" id="totalPvPct">—</span></div>
+    <div class="stat" id="totalRiskStat" style="cursor:pointer;" onclick="openTab('conseils')">
+      <span class="stat-label">Risque</span>
+      <span class="stat-value" id="totalRisk" style="font-size:14px;">—</span>
     </div>
-    <div class="stat">
-      <div class="stat-label">PV/MV %</div>
-      <div class="stat-value" id="totalPvPct">—</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Dernière MAJ</div>
-      <div class="stat-value" id="lastUpdate" style="font-size:13px;">—</div>
-    </div>
-    <button class="primary" onclick="refreshAll()">↻ Rafraîchir</button>
   </div>
 </header>
 
+<div class="tabs">
+  <div class="tab active" data-tab="portfolio" onclick="openTab('portfolio')">Positions</div>
+  <div class="tab" data-tab="charts" onclick="openTab('charts')">Graphiques</div>
+  <div class="tab" data-tab="alerts" onclick="openTab('alerts')">Alertes</div>
+  <div class="tab" data-tab="watchlist" onclick="openTab('watchlist')">Watchlist</div>
+  <div class="tab" data-tab="conseils" onclick="openTab('conseils')">💡 Conseils</div>
+  <div class="tab" data-tab="settings" onclick="openTab('settings')">Réglages</div>
+</div>
+
 <main>
-  <div>
-    <!-- Positions -->
+
+  <!-- PORTFOLIO -->
+  <section id="tab-portfolio">
     <div class="card">
       <h2>
         Positions
-        <div class="actions">
-          <button class="primary" onclick="openAddModal()">+ Ajouter</button>
-        </div>
+        <button class="primary" onclick="openAddModal()" style="padding:6px 12px;font-size:12px;min-height:30px;">+ Ajouter</button>
       </h2>
-      <div style="overflow-x:auto;">
-        <table id="positionsTable">
-          <thead>
-            <tr>
-              <th>Ticker</th>
-              <th>Nom</th>
-              <th>Type</th>
-              <th class="num">Qté</th>
-              <th class="num">Prix achat</th>
-              <th class="num">Cours</th>
-              <th class="num">Jour %</th>
-              <th class="num">Valeur €</th>
-              <th class="num">PV €</th>
-              <th class="num">PV %</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="positionsBody">
-            <tr><td colspan="11" class="empty">Aucune position. Clique sur « + Ajouter ».</td></tr>
-          </tbody>
-        </table>
+      <div id="positionsList">
+        <div class="empty">Aucune position. Clique sur « + Ajouter ».</div>
       </div>
     </div>
+  </section>
 
-    <!-- Charts -->
-    <div class="charts-row">
+  <!-- CHARTS -->
+  <section id="tab-charts" class="hidden">
+    <div class="charts">
       <div class="card">
-        <h2>Répartition</h2>
+        <h2>Répartition par actif</h2>
         <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
       </div>
       <div class="card">
         <h2>
-          Historique valeur
-          <div class="actions">
-            <select id="historyPeriod" onchange="loadHistory()" style="width:auto;padding:4px 8px;font-size:12px;">
-              <option value="1mo">1 mois</option>
-              <option value="3mo">3 mois</option>
-              <option value="6mo">6 mois</option>
-              <option value="1y" selected>1 an</option>
-            </select>
-          </div>
+          Historique
+          <select id="historyTicker" onchange="loadHistory()" style="width:auto;padding:5px 8px;font-size:12px;background:var(--bg-3);"></select>
         </h2>
+        <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+          <button class="ghost period-btn active" data-period="1mo" onclick="setPeriod('1mo')">1M</button>
+          <button class="ghost period-btn" data-period="3mo" onclick="setPeriod('3mo')">3M</button>
+          <button class="ghost period-btn" data-period="6mo" onclick="setPeriod('6mo')">6M</button>
+          <button class="ghost period-btn" data-period="1y" onclick="setPeriod('1y')">1A</button>
+          <button class="ghost period-btn" data-period="5y" onclick="setPeriod('5y')">5A</button>
+        </div>
         <div class="chart-wrap"><canvas id="lineChart"></canvas></div>
       </div>
     </div>
+  </section>
 
-    <!-- Watchlist -->
-    <div class="card" style="margin-top:20px;">
+  <!-- ALERTS -->
+  <section id="tab-alerts" class="hidden">
+    <div class="card">
+      <h2>
+        Alertes prix
+        <button class="primary" onclick="openAlertModal()" style="padding:6px 12px;font-size:12px;min-height:30px;">+ Alerte</button>
+      </h2>
+      <div id="alertsList"><div class="empty">Aucune alerte.</div></div>
+    </div>
+  </section>
+
+  <!-- WATCHLIST -->
+  <section id="tab-watchlist" class="hidden">
+    <div class="card">
       <h2>
         Watchlist
-        <div class="actions">
-          <button onclick="openWatchlistModal()">+ Surveiller</button>
-        </div>
+        <button class="primary" onclick="openWatchlistModal()" style="padding:6px 12px;font-size:12px;min-height:30px;">+ Surveiller</button>
       </h2>
-      <div style="overflow-x:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Ticker</th>
-              <th>Nom</th>
-              <th>Secteur</th>
-              <th class="num">Cours</th>
-              <th class="num">Jour %</th>
-              <th>Note</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="watchlistBody">
-            <tr><td colspan="7" class="empty">Chargement…</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <div id="watchlistList"><div class="empty">Watchlist vide.</div></div>
     </div>
-  </div>
+  </section>
 
-  <!-- Sidebar : alertes -->
-  <aside>
-    <div class="card">
-      <h2>
-        Alertes
-        <div class="actions"><button onclick="openAlertModal()">+ Alerte</button></div>
-      </h2>
-      <div id="alertsBody">
-        <div class="empty">Aucune alerte.</div>
-      </div>
+  <!-- CONSEILS -->
+  <section id="tab-conseils" class="hidden">
+    <div class="card" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(79,140,255,0.06));border-color:rgba(212,175,55,0.4);">
+      <h2 style="color:var(--accent);">🎯 Plan d'action recommandé <button class="ghost" onclick="renderConseils()" style="padding:4px 10px;font-size:11px;min-height:26px;">↻ Recalculer</button></h2>
+      <div id="conseilsPlan"><div class="empty"><span class="loader"></span> Analyse…</div></div>
     </div>
     <div class="card">
-      <h2>Allocation cible</h2>
-      <div style="font-size:12px;line-height:1.8;color:var(--muted);">
-        <div><span style="color:var(--blue);">●</span> Amundi MSCI World <strong style="color:var(--text);float:right;">50%</strong></div>
-        <div><span style="color:var(--blue);">●</span> Amundi S&P 500 <strong style="color:var(--text);float:right;">30%</strong></div>
-        <div><span style="color:var(--blue);">●</span> Amundi MSCI EM Asia <strong style="color:var(--text);float:right;">20%</strong></div>
-        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
-          <span style="color:var(--accent);">●</span> Or physique <strong style="color:var(--text);float:right;">hors PEA</strong>
+      <h2>Diagnostic global</h2>
+      <div id="conseilsGlobal"><div class="empty">—</div></div>
+    </div>
+    <div class="card">
+      <h2>Conseils par position</h2>
+      <div id="conseilsPositions"><div class="empty">—</div></div>
+    </div>
+    <div class="card">
+      <h2>Opportunités watchlist</h2>
+      <div id="conseilsWatchlist"><div class="empty">—</div></div>
+    </div>
+    <div class="card">
+      <h2>Rappels fiscaux & stratégiques</h2>
+      <div id="conseilsRappels"></div>
+    </div>
+    <div class="card" style="background:rgba(212,175,55,0.06);border-color:rgba(212,175,55,0.3);">
+      <h2 style="color:var(--accent);">⚠ Avertissement</h2>
+      <p style="font-size:12px;color:var(--muted);line-height:1.6;margin:0;">
+        Ces conseils sont générés automatiquement à partir de règles simples (allocation cible, moyennes mobiles, volatilité, concentration).
+        <strong style="color:var(--text);">Ce ne sont pas des recommandations financières professionnelles.</strong>
+        Vérifie toujours toi-même avant d'acheter/vendre, et n'investis que ce que tu peux te permettre de perdre.
+      </p>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="tab-settings" class="hidden">
+    <div class="card">
+      <h2>Synchronisation GitHub</h2>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Token GitHub (PAT)</div>
+          <div class="setting-sub" id="tokenStatus">Non configuré</div>
+        </div>
+        <button onclick="openTokenModal()">Configurer</button>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Repo de données</div>
+          <div class="setting-sub" id="repoStatus">dume2309/invest · data/portfolio.json</div>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Forcer push maintenant</div>
+          <div class="setting-sub">Envoie l'état local sur GitHub</div>
+        </div>
+        <button onclick="ghPushNow()">Push</button>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Forcer pull maintenant</div>
+          <div class="setting-sub">Récupère depuis GitHub (merge intelligent)</div>
+        </div>
+        <button onclick="ghPullNow()">Pull</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Données locales</h2>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Exporter JSON</div>
+          <div class="setting-sub">Télécharge un backup local</div>
+        </div>
+        <button onclick="exportJson()">Export</button>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Importer JSON</div>
+          <div class="setting-sub">Restaure depuis un backup</div>
+        </div>
+        <button onclick="document.getElementById('importFile').click()">Import</button>
+        <input type="file" id="importFile" accept=".json" class="hidden" onchange="importJson(event)">
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label" style="color:var(--red);">Réinitialiser tout</div>
+          <div class="setting-sub">Supprime toutes les données locales</div>
+        </div>
+        <button class="danger" onclick="resetAll()" style="font-size:13px;">Reset</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>App</h2>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Forcer la mise à jour</div>
+          <div class="setting-sub">Vide le cache et recharge l'app</div>
+        </div>
+        <button onclick="forceUpdate()">🔄 MAJ</button>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Version</div>
+          <div class="setting-sub" id="versionInfo">v1.0</div>
         </div>
       </div>
     </div>
-  </aside>
+  </section>
+
 </main>
 
-<!-- Modal : ajout position -->
+<!-- =================== MODALS =================== -->
 <div class="modal-overlay" id="addModal" onclick="if(event.target===this)closeModal('addModal')">
   <div class="modal">
-    <h3>Ajouter une position</h3>
+    <h3 id="addModalTitle">Ajouter une position</h3>
     <div class="form-row">
       <label>Ticker (Yahoo Finance)</label>
-      <input id="f_ticker" placeholder="ex. CW8.PA, RKLB, GC=F">
+      <input id="f_ticker" placeholder="ex. CW8.PA, RKLB, GC=F" autocapitalize="characters">
     </div>
     <div class="form-row">
       <label>Nom (optionnel)</label>
@@ -303,28 +504,23 @@
     <div class="form-grid">
       <div class="form-row">
         <label>Type</label>
-        <select id="f_type">
-          <option>ETF</option>
-          <option>Action</option>
-          <option>Or</option>
+        <select id="f_type" onchange="updateQteHint()">
+          <option>ETF</option><option>Action</option><option>Or</option>
         </select>
       </div>
       <div class="form-row">
         <label>Devise</label>
-        <select id="f_devise">
-          <option>EUR</option>
-          <option>USD</option>
-        </select>
+        <select id="f_devise"><option>EUR</option><option>USD</option></select>
       </div>
     </div>
     <div class="form-grid">
       <div class="form-row">
-        <label>Quantité <span id="f_qte_hint" style="color:var(--muted);font-size:10px;"></span></label>
-        <input id="f_quantite" type="number" step="0.0001" placeholder="ex. 10">
+        <label>Quantité <span id="f_qte_hint" style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;"></span></label>
+        <input id="f_quantite" type="number" inputmode="decimal" step="0.0001">
       </div>
       <div class="form-row">
         <label>Prix d'achat unitaire</label>
-        <input id="f_prix" type="number" step="0.01" placeholder="ex. 420.50">
+        <input id="f_prix" type="number" inputmode="decimal" step="0.01">
       </div>
     </div>
     <div class="form-row">
@@ -333,146 +529,368 @@
     </div>
     <div class="modal-actions">
       <button onclick="closeModal('addModal')">Annuler</button>
-      <button class="primary" onclick="addPosition()">Ajouter</button>
+      <button class="primary" onclick="savePosition()">Enregistrer</button>
     </div>
   </div>
 </div>
 
-<!-- Modal : alerte -->
 <div class="modal-overlay" id="alertModal" onclick="if(event.target===this)closeModal('alertModal')">
   <div class="modal">
     <h3>Nouvelle alerte prix</h3>
     <div class="form-row">
       <label>Ticker</label>
-      <input id="a_ticker" placeholder="ex. RKLB">
+      <input id="a_ticker" placeholder="ex. RKLB" autocapitalize="characters">
     </div>
     <div class="form-grid">
       <div class="form-row">
         <label>Seuil haut</label>
-        <input id="a_haut" type="number" step="0.01">
+        <input id="a_haut" type="number" inputmode="decimal" step="0.01">
       </div>
       <div class="form-row">
         <label>Seuil bas</label>
-        <input id="a_bas" type="number" step="0.01">
+        <input id="a_bas" type="number" inputmode="decimal" step="0.01">
       </div>
     </div>
     <div class="modal-actions">
       <button onclick="closeModal('alertModal')">Annuler</button>
-      <button class="primary" onclick="addAlert()">Créer</button>
+      <button class="primary" onclick="saveAlert()">Créer</button>
     </div>
   </div>
 </div>
 
-<!-- Modal : watchlist -->
 <div class="modal-overlay" id="watchlistModal" onclick="if(event.target===this)closeModal('watchlistModal')">
   <div class="modal">
     <h3>Ajouter à la watchlist</h3>
     <div class="form-row">
       <label>Ticker</label>
-      <input id="w_ticker" placeholder="ex. NVDA">
+      <input id="w_ticker" placeholder="ex. NVDA" autocapitalize="characters">
     </div>
     <div class="form-row">
       <label>Nom</label>
-      <input id="w_nom" placeholder="ex. Nvidia">
+      <input id="w_nom">
     </div>
     <div class="form-row">
       <label>Secteur</label>
-      <input id="w_secteur" placeholder="ex. Infrastructure IA">
+      <input id="w_secteur">
     </div>
     <div class="form-row">
       <label>Note</label>
-      <input id="w_note" placeholder="optionnel">
+      <input id="w_note">
     </div>
     <div class="modal-actions">
       <button onclick="closeModal('watchlistModal')">Annuler</button>
-      <button class="primary" onclick="addWatchlist()">Ajouter</button>
+      <button class="primary" onclick="saveWatchlist()">Ajouter</button>
     </div>
   </div>
 </div>
 
-<script>
-const API = "";
-let donutChart = null, lineChart = null;
-let currentData = { positions: [], alertes: [], watchlist: [], totaux: {} };
+<div class="modal-overlay" id="tokenModal" onclick="if(event.target===this)closeModal('tokenModal')">
+  <div class="modal">
+    <h3>Token GitHub</h3>
+    <p style="font-size:12px;color:var(--muted);line-height:1.5;">
+      Crée un PAT fine-grained sur <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" style="color:var(--accent);">github.com</a>
+      avec le scope <strong>Contents: Read and Write</strong> sur le repo <strong>invest</strong>.
+    </p>
+    <div class="form-row">
+      <label>Token</label>
+      <input id="t_token" type="password" placeholder="github_pat_...">
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeModal('tokenModal')">Annuler</button>
+      <button class="primary" onclick="saveToken()">Sauvegarder</button>
+    </div>
+  </div>
+</div>
 
+<div id="toast"></div>
+
+<script>
+// ============================================================================
+// CONFIG
+// ============================================================================
+const APP_VERSION = "v1.0";
+const STORAGE_KEY = "invest_v1";
+const TOKEN_KEY = "invest_gh_token";
+const GH_REPO = "dume2309/invest";
+const GH_PATH = "data/portfolio.json";
+const GH_BACKUP_PATH = "data/portfolio-backup.txt";
+const PUSH_DEBOUNCE_MS = 2500;
+
+// Proxies CORS pour Yahoo Finance (fallback en cascade)
+const CORS_PROXIES = [
+  (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`,
+];
+
+// ============================================================================
+// STATE
+// ============================================================================
+let D = {
+  positions: [],
+  alertes: [],
+  watchlist: [],
+  deletedIds: [],
+  lastModified: 0,
+  schemaVersion: 1,
+};
+let quoteCache = {}; // ticker -> {data, ts}
+const QUOTE_TTL = 30_000;
+let currentPeriod = "1mo";
+let donutChart = null, lineChart = null;
+let pushTimer = null;
+let editingId = null; // si modale en mode edit
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+const $ = (id) => document.getElementById(id);
 const fmt = {
   eur: (n) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(n || 0),
   num: (n, d=2) => new Intl.NumberFormat("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d }).format(n || 0),
   pct: (n) => (n >= 0 ? "+" : "") + (n || 0).toFixed(2) + "%",
 };
+const cls = (n) => n > 0 ? "pos" : n < 0 ? "neg" : "";
+const uuid = () => crypto.randomUUID ? crypto.randomUUID() : (Date.now() + "-" + Math.random().toString(36).slice(2));
 
-function clsPv(n) { return n > 0 ? "pos" : n < 0 ? "neg" : ""; }
+function toast(msg, type="") {
+  const t = $("toast");
+  t.textContent = msg; t.className = type;
+  void t.offsetWidth; t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2800);
+}
 
-// ----------------------------------------------------------------------
-// Chargement portefeuille
-// ----------------------------------------------------------------------
-async function loadPortfolio() {
-  document.getElementById("lastUpdate").innerHTML = '<span class="loader"></span>';
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = ""; for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+function base64ToUtf8(b64) {
+  const bin = atob(b64.replace(/\s/g, ""));
+  const bytes = new Uint8Array(bin.length);
+  for (let i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+// ============================================================================
+// STORAGE
+// ============================================================================
+function loadLocal() {
   try {
-    const res = await fetch(API + "/api/portfolio");
-    const data = await res.json();
-    currentData = data;
-    render(data);
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) D = { ...D, ...JSON.parse(raw) };
+  } catch (e) { console.error("loadLocal", e); }
+}
+function saveLocal(touch=true) {
+  if (touch) D.lastModified = Date.now();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(D));
+  scheduleGhPush();
+}
+
+// ============================================================================
+// COURS (Yahoo Finance via proxy CORS, fallback Stooq)
+// ============================================================================
+async function fetchYahoo(ticker) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=2d`;
+  let lastErr;
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const r = await fetch(proxy(url), { cache: "no-store" });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const j = await r.json();
+      const meta = j?.chart?.result?.[0]?.meta;
+      if (!meta) throw new Error("Réponse vide");
+      const price = meta.regularMarketPrice;
+      const prev = meta.chartPreviousClose ?? meta.previousClose ?? price;
+      const change = price - prev;
+      const change_pct = prev ? (change / prev) * 100 : 0;
+      return {
+        ticker, price, previous_close: prev, change, change_pct,
+        currency: meta.currency || "USD",
+        name: meta.longName || meta.shortName || ticker,
+        ts: Date.now(),
+      };
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error("Cours indisponible (" + ticker + "): " + (lastErr?.message || "?"));
+}
+
+async function fetchYahooHistory(ticker, period) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=${period}`;
+  let lastErr;
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const r = await fetch(proxy(url));
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const j = await r.json();
+      const result = j?.chart?.result?.[0];
+      if (!result) throw new Error("Pas de données");
+      const ts = result.timestamp || [];
+      const closes = result.indicators?.quote?.[0]?.close || [];
+      return ts.map((t, i) => ({
+        date: new Date(t * 1000).toISOString().slice(0, 10),
+        close: closes[i],
+      })).filter((d) => d.close != null);
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error("Historique indispo: " + (lastErr?.message || "?"));
+}
+
+async function getQuote(ticker) {
+  const c = quoteCache[ticker];
+  if (c && Date.now() - c.ts < QUOTE_TTL) return c.data;
+  const data = await fetchYahoo(ticker);
+  quoteCache[ticker] = { data, ts: Date.now() };
+  return data;
+}
+
+async function getEurUsd() {
+  try { return (await getQuote("EURUSD=X")).price; } catch { return 1.08; }
+}
+
+// ============================================================================
+// VALORISATION
+// ============================================================================
+const ONCE_GR = 31.1035;
+async function valorise(p) {
+  try {
+    const q = await getQuote(p.ticker);
+    let prixActuel = q.price;
+    let valEur, coutEur, devCote = q.currency, name = q.name;
+
+    if (p.type === "Or" && p.ticker === "GC=F") {
+      const eurusd = await getEurUsd();
+      const eurParGramme = (q.price / ONCE_GR) / eurusd;
+      prixActuel = eurParGramme; devCote = "EUR/g";
+      valEur = eurParGramme * p.quantite;
+      coutEur = p.prix_achat * p.quantite;
+    } else if (q.currency === "EUR") {
+      valEur = q.price * p.quantite;
+      coutEur = p.prix_achat * p.quantite;
+    } else if (q.currency === "USD") {
+      const eurusd = await getEurUsd();
+      valEur = (q.price * p.quantite) / eurusd;
+      coutEur = (p.prix_achat * p.quantite) / eurusd;
+    } else {
+      valEur = q.price * p.quantite;
+      coutEur = p.prix_achat * p.quantite;
+    }
+    const pv = valEur - coutEur;
+    const pvPct = coutEur ? (pv / coutEur * 100) : 0;
+    return { ...p, prix_actuel: prixActuel, valeur_eur: valEur, cout_eur: coutEur,
+      pv_eur: pv, pv_pct: pvPct, change_pct_jour: q.change_pct,
+      devise_cotation: devCote, name };
   } catch (e) {
-    console.error(e);
-    document.getElementById("lastUpdate").textContent = "Erreur";
+    return { ...p, error: e.message };
   }
 }
 
-function render(data) {
-  // Totaux header
-  document.getElementById("totalValue").textContent = fmt.eur(data.totaux.valeur_eur);
-  const pv = data.totaux.pv_eur;
-  const pvPct = data.totaux.pv_pct;
-  const pvEl = document.getElementById("totalPv");
-  pvEl.textContent = (pv >= 0 ? "+" : "") + fmt.eur(pv);
-  pvEl.className = "stat-value " + clsPv(pv);
-  const pctEl = document.getElementById("totalPvPct");
-  pctEl.textContent = fmt.pct(pvPct);
-  pctEl.className = "stat-value " + clsPv(pv);
-  document.getElementById("lastUpdate").textContent = new Date(data.ts).toLocaleTimeString("fr-FR");
+// ============================================================================
+// RENDER
+// ============================================================================
+async function refreshAll() {
+  const dot = $("syncDot");
+  $("btnRefresh").innerHTML = '<span class="loader"></span>';
+  dot.className = "sync-dot warn";
+  try {
+    quoteCache = {}; // forcer re-fetch
+    const valos = await Promise.all(D.positions.map(valorise));
+    renderPositions(valos);
+    renderTotals(valos);
+    renderDonut(valos);
+    await renderAlerts();
+    await renderWatchlist();
+    await loadHistory();
+    $("syncTime").textContent = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    dot.className = "sync-dot ok";
+  } catch (e) {
+    console.error(e); dot.className = "sync-dot err";
+    toast("Erreur refresh: " + e.message, "error");
+  } finally {
+    $("btnRefresh").textContent = "↻";
+  }
+}
 
-  // Tableau positions
-  const tb = document.getElementById("positionsBody");
-  if (!data.positions.length) {
-    tb.innerHTML = '<tr><td colspan="11" class="empty">Aucune position. Clique sur « + Ajouter ».</td></tr>';
+function renderTotals(valos) {
+  let val = 0, cost = 0, riskW = 0;
+  const valids = valos.filter(p => !p.error);
+  for (const p of valids) { val += p.valeur_eur; cost += p.cout_eur; }
+  for (const p of valids) riskW += riskOf(p.ticker, p.type) * p.valeur_eur;
+  const pv = val - cost;
+  const pct = cost ? (pv / cost * 100) : 0;
+  $("totalValue").textContent = fmt.eur(val);
+  const elPv = $("totalPv");
+  elPv.textContent = (pv >= 0 ? "+" : "") + fmt.eur(pv);
+  elPv.className = "stat-value " + cls(pv);
+  const elPct = $("totalPvPct");
+  elPct.textContent = fmt.pct(pct);
+  elPct.className = "stat-value " + cls(pv);
+  // Risque
+  const elRisk = $("totalRisk");
+  if (val > 0) {
+    const rMoy = riskW / val;
+    const rRound = Math.max(1, Math.min(5, Math.round(rMoy)));
+    elRisk.innerHTML = `<span class="risk-${rRound}">${RISK_LABEL[rRound]}</span> <span style="color:var(--muted);font-size:11px;">${rMoy.toFixed(1)}/5</span>`;
   } else {
-    tb.innerHTML = data.positions.map(p => {
-      if (p.error) {
-        return `<tr><td class="ticker-cell">${p.ticker}</td><td colspan="9" style="color:var(--red);">⚠ ${p.error}</td>
-          <td><button class="danger" onclick="delPosition('${p.id}')">×</button></td></tr>`;
-      }
-      const unite = p.type === "Or" ? " g" : "";
-      return `<tr>
-        <td class="ticker-cell">${p.ticker}</td>
-        <td>${p.nom || p.name || "—"}</td>
-        <td><span class="type-badge ${p.type}">${p.type}</span></td>
-        <td class="num">${fmt.num(p.quantite, p.type === "Or" ? 2 : 4)}${unite}</td>
-        <td class="num">${fmt.num(p.prix_achat, 2)} ${p.devise}</td>
-        <td class="num">${fmt.num(p.prix_actuel, 2)} ${p.devise_cotation}</td>
-        <td class="num ${clsPv(p.change_pct_jour)}">${fmt.pct(p.change_pct_jour)}</td>
-        <td class="num">${fmt.eur(p.valeur_eur)}</td>
-        <td class="num ${clsPv(p.pv_eur)}">${(p.pv_eur >= 0 ? "+" : "")}${fmt.eur(p.pv_eur)}</td>
-        <td class="num ${clsPv(p.pv_pct)}">${fmt.pct(p.pv_pct)}</td>
-        <td><button class="danger" onclick="delPosition('${p.id}')">×</button></td>
-      </tr>`;
-    }).join("");
+    elRisk.textContent = "—";
   }
-
-  // Alertes
-  renderAlerts(data.alertes);
-
-  // Donut
-  renderDonut(data.positions);
 }
 
-function renderAlerts(alertes) {
-  const el = document.getElementById("alertsBody");
-  if (!alertes.length) {
-    el.innerHTML = '<div class="empty">Aucune alerte.</div>';
+function renderPositions(valos) {
+  const el = $("positionsList");
+  if (!valos.length) {
+    el.innerHTML = '<div class="empty">Aucune position. Clique sur « + Ajouter ».</div>';
     return;
   }
-  el.innerHTML = alertes.map(a => `
+  el.innerHTML = valos.map(p => {
+    if (p.error) {
+      return `<div class="pos-item">
+        <div class="pos-row">
+          <div><span class="pos-ticker">${p.ticker}</span> <span class="type-badge ${p.type}">${p.type}</span></div>
+          <button class="danger" onclick="delPosition('${p.id}')">×</button>
+        </div>
+        <div style="color:var(--red);font-size:12px;">⚠ ${p.error}</div>
+      </div>`;
+    }
+    const unite = p.type === "Or" ? " g" : "";
+    const r = riskOf(p.ticker, p.type);
+    return `<div class="pos-item" onclick="editPosition('${p.id}')">
+      <div class="pos-row">
+        <div>
+          <span class="pos-ticker">${p.ticker}</span>
+          <span class="type-badge ${p.type}">${p.type}</span>
+          ${riskPill(r)}
+          <div class="pos-name">${p.nom || p.name || ""}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="pos-value">${fmt.eur(p.valeur_eur)}</div>
+          <div class="pos-pv ${cls(p.pv_eur)}">${(p.pv_eur >= 0 ? "+" : "")}${fmt.eur(p.pv_eur)} (${fmt.pct(p.pv_pct)})</div>
+        </div>
+      </div>
+      <div class="pos-meta">
+        <span>${fmt.num(p.quantite, p.type === "Or" ? 2 : 4)}${unite} × ${fmt.num(p.prix_achat, 2)} ${p.devise}</span>
+        <span>Cours ${fmt.num(p.prix_actuel, 2)} ${p.devise_cotation}</span>
+        <span class="${cls(p.change_pct_jour)}">Jour ${fmt.pct(p.change_pct_jour)}</span>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function renderAlerts() {
+  for (const a of D.alertes) {
+    if (!a.actif) { a.declenchee = false; continue; }
+    try {
+      const q = await getQuote(a.ticker);
+      a.prix_actuel = q.price;
+      a.declenchee = (a.seuil_haut != null && q.price >= a.seuil_haut)
+                  || (a.seuil_bas != null && q.price <= a.seuil_bas);
+    } catch { a.declenchee = false; }
+  }
+  const el = $("alertsList");
+  if (!D.alertes.length) {
+    el.innerHTML = '<div class="empty">Aucune alerte.</div>'; return;
+  }
+  el.innerHTML = D.alertes.map(a => `
     <div class="alert-item ${a.declenchee ? "declenchee" : ""}">
       <div class="alert-info">
         <div class="ticker">${a.ticker} ${a.declenchee ? "🔔" : ""}</div>
@@ -480,237 +898,865 @@ function renderAlerts(alertes) {
           ${a.seuil_bas != null ? `bas ${fmt.num(a.seuil_bas)}` : ""}
           ${a.seuil_bas != null && a.seuil_haut != null ? " · " : ""}
           ${a.seuil_haut != null ? `haut ${fmt.num(a.seuil_haut)}` : ""}
-          ${a.prix_actuel ? ` · cours ${fmt.num(a.prix_actuel)}` : ""}
+          ${a.prix_actuel ? ` · cours ${fmt.num(a.prix_actuel, 2)}` : ""}
         </div>
       </div>
       <button class="danger" onclick="delAlert('${a.id}')">×</button>
-    </div>
-  `).join("");
+    </div>`).join("");
 }
 
-// ----------------------------------------------------------------------
-// Donut chart
-// ----------------------------------------------------------------------
-function renderDonut(positions) {
-  const valid = positions.filter(p => !p.error);
-  const labels = valid.map(p => p.ticker);
-  const values = valid.map(p => p.valeur_eur);
-  const colors = valid.map(p => {
-    if (p.type === "ETF") return "#4f8cff";
-    if (p.type === "Action") return "#26d07c";
-    if (p.type === "Or") return "#d4af37";
-    return "#8a94a6";
-  });
+async function renderWatchlist() {
+  const el = $("watchlistList");
+  if (!D.watchlist.length) {
+    el.innerHTML = '<div class="empty">Watchlist vide.</div>'; return;
+  }
+  const items = await Promise.all(D.watchlist.map(async (w) => {
+    try { return { ...w, q: await getQuote(w.ticker) }; }
+    catch (e) { return { ...w, err: e.message }; }
+  }));
+  el.innerHTML = items.map(w => `
+    <div class="pos-item">
+      <div class="pos-row">
+        <div>
+          <span class="pos-ticker">${w.ticker}</span>
+          <div class="pos-name">${w.nom || w.q?.name || ""}</div>
+        </div>
+        <div style="text-align:right;">
+          ${w.err ? `<div style="color:var(--red);font-size:12px;">⚠</div>` :
+          `<div class="pos-value">${fmt.num(w.q.price, 2)} ${w.q.currency}</div>
+           <div class="pos-pv ${cls(w.q.change_pct)}">${fmt.pct(w.q.change_pct)}</div>`}
+        </div>
+      </div>
+      <div class="pos-meta">
+        <span>${w.secteur || ""}</span>
+        <span style="flex:1;">${w.note || ""}</span>
+        <button class="danger" onclick="delWatchlist('${w.id}')" style="padding:0;">×</button>
+      </div>
+    </div>`).join("");
+}
 
+// --- Charts ---
+function renderDonut(valos) {
+  const valid = valos.filter(p => !p.error);
+  if (!valid.length) { if (donutChart) { donutChart.destroy(); donutChart = null; } return; }
+  const labels = valid.map(p => p.ticker);
+  const data = valid.map(p => p.valeur_eur);
+  const colors = valid.map(p => p.type === "ETF" ? "#4f8cff" : p.type === "Action" ? "#26d07c" : p.type === "Or" ? "#d4af37" : "#8a94a6");
   if (donutChart) donutChart.destroy();
-  donutChart = new Chart(document.getElementById("donutChart"), {
+  const ctx = $("donutChart"); if (!ctx) return;
+  donutChart = new Chart(ctx, {
     type: "doughnut",
-    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }] },
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { position: "right", labels: { color: "#e6e8ec", font: { size: 11 } } },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => `${ctx.label}: ${fmt.eur(ctx.parsed)}`
-          }
+        legend: { position: "right", labels: { color: "#e6e8ec", font: { size: 11 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmt.eur(ctx.parsed)}` } }
+      }
+    }
+  });
+}
+
+async function loadHistory() {
+  const sel = $("historyTicker");
+  if (!sel) return;
+  const tickers = D.positions.map(p => p.ticker);
+  if (sel.options.length !== tickers.length || ![...sel.options].every((o,i) => o.value === tickers[i])) {
+    sel.innerHTML = tickers.map(t => `<option value="${t}">${t}</option>`).join("");
+  }
+  if (!tickers.length) { if (lineChart) { lineChart.destroy(); lineChart = null; } return; }
+  const ticker = sel.value || tickers[0];
+  sel.value = ticker;
+  try {
+    const hist = await fetchYahooHistory(ticker, currentPeriod);
+    const labels = hist.map(d => d.date);
+    const data = hist.map(d => d.close);
+    if (lineChart) lineChart.destroy();
+    lineChart = new Chart($("lineChart"), {
+      type: "line",
+      data: { labels, datasets: [{
+        label: ticker, data, borderColor: "#d4af37",
+        backgroundColor: "rgba(212,175,55,0.08)",
+        tension: 0.3, fill: true, pointRadius: 0, borderWidth: 2,
+      }]},
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: "#8a94a6", maxTicksLimit: 6 }, grid: { color: "#262c38" } },
+          y: { ticks: { color: "#8a94a6" }, grid: { color: "#262c38" } }
+        }
+      }
+    });
+  } catch (e) { toast("Hist : " + e.message, "error"); }
+}
+function setPeriod(p) {
+  currentPeriod = p;
+  document.querySelectorAll(".period-btn").forEach(b => b.classList.toggle("active", b.dataset.period === p));
+  loadHistory();
+}
+
+// ============================================================================
+// CRUD
+// ============================================================================
+function openAddModal(id=null) {
+  editingId = id;
+  if (id) {
+    const p = D.positions.find(x => x.id === id);
+    if (!p) return;
+    $("addModalTitle").textContent = "Modifier la position";
+    $("f_ticker").value = p.ticker; $("f_nom").value = p.nom || "";
+    $("f_type").value = p.type; $("f_devise").value = p.devise || "EUR";
+    $("f_quantite").value = p.quantite; $("f_prix").value = p.prix_achat;
+    $("f_date").value = p.date_achat || "";
+  } else {
+    $("addModalTitle").textContent = "Ajouter une position";
+    ["f_ticker","f_nom","f_quantite","f_prix"].forEach(i => $(i).value = "");
+    $("f_date").value = new Date().toISOString().slice(0,10);
+    $("f_type").value = "ETF"; $("f_devise").value = "EUR";
+  }
+  updateQteHint();
+  $("addModal").classList.add("active");
+}
+function editPosition(id) { openAddModal(id); }
+function updateQteHint() {
+  $("f_qte_hint").textContent = $("f_type").value === "Or" ? "(en grammes)" : "";
+}
+function savePosition() {
+  const ticker = $("f_ticker").value.trim().toUpperCase();
+  const qte = parseFloat($("f_quantite").value);
+  const prix = parseFloat($("f_prix").value);
+  if (!ticker || !qte || !prix) { toast("Ticker, quantité et prix requis", "error"); return; }
+  const data = {
+    ticker, nom: $("f_nom").value.trim(),
+    type: $("f_type").value, devise: $("f_devise").value,
+    quantite: qte, prix_achat: prix,
+    date_achat: $("f_date").value || new Date().toISOString().slice(0,10),
+  };
+  if (editingId) {
+    const i = D.positions.findIndex(p => p.id === editingId);
+    if (i >= 0) D.positions[i] = { ...D.positions[i], ...data };
+  } else {
+    D.positions.push({ id: uuid(), ...data });
+  }
+  saveLocal();
+  closeModal("addModal");
+  refreshAll();
+  toast(editingId ? "Position modifiée" : "Position ajoutée", "success");
+}
+function delPosition(id) {
+  if (!confirm("Supprimer cette position ?")) return;
+  D.positions = D.positions.filter(p => p.id !== id);
+  D.deletedIds.push({ id, type: "position", ts: Date.now() });
+  saveLocal(); refreshAll();
+}
+
+function openAlertModal() {
+  ["a_ticker","a_haut","a_bas"].forEach(i => $(i).value = "");
+  $("alertModal").classList.add("active");
+}
+function saveAlert() {
+  const ticker = $("a_ticker").value.trim().toUpperCase();
+  if (!ticker) { toast("Ticker requis", "error"); return; }
+  const haut = $("a_haut").value ? parseFloat($("a_haut").value) : null;
+  const bas = $("a_bas").value ? parseFloat($("a_bas").value) : null;
+  D.alertes.push({ id: uuid(), ticker, seuil_haut: haut, seuil_bas: bas, actif: true, declenchee: false });
+  saveLocal(); closeModal("alertModal"); renderAlerts();
+  toast("Alerte créée", "success");
+}
+function delAlert(id) {
+  D.alertes = D.alertes.filter(a => a.id !== id);
+  D.deletedIds.push({ id, type: "alerte", ts: Date.now() });
+  saveLocal(); renderAlerts();
+}
+
+function openWatchlistModal() {
+  ["w_ticker","w_nom","w_secteur","w_note"].forEach(i => $(i).value = "");
+  $("watchlistModal").classList.add("active");
+}
+function saveWatchlist() {
+  const ticker = $("w_ticker").value.trim().toUpperCase();
+  if (!ticker) { toast("Ticker requis", "error"); return; }
+  D.watchlist.push({
+    id: uuid(), ticker,
+    nom: $("w_nom").value.trim(),
+    secteur: $("w_secteur").value.trim(),
+    note: $("w_note").value.trim(),
+  });
+  saveLocal(); closeModal("watchlistModal"); renderWatchlist();
+  toast("Ajouté à la watchlist", "success");
+}
+function delWatchlist(id) {
+  if (!confirm("Retirer de la watchlist ?")) return;
+  D.watchlist = D.watchlist.filter(w => w.id !== id);
+  D.deletedIds.push({ id, type: "watchlist", ts: Date.now() });
+  saveLocal(); renderWatchlist();
+}
+
+function closeModal(id) { $(id).classList.remove("active"); }
+
+// ============================================================================
+// TABS
+// ============================================================================
+function openTab(name) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+  ["portfolio","charts","alerts","watchlist","settings"].forEach(s =>
+    $("tab-" + s).classList.toggle("hidden", s !== name));
+  if (name === "charts") { loadHistory(); }
+}
+
+// ============================================================================
+// SYNC GITHUB (Contents API)
+// ============================================================================
+function getToken() { return localStorage.getItem(TOKEN_KEY); }
+
+function openTokenModal() {
+  $("t_token").value = getToken() || "";
+  $("tokenModal").classList.add("active");
+}
+async function saveToken() {
+  const tok = $("t_token").value.trim();
+  if (!tok) { toast("Token vide", "error"); return; }
+  // Test rapide
+  try {
+    const r = await fetch(`https://api.github.com/repos/${GH_REPO}`, { headers: { Authorization: "Bearer " + tok }});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    localStorage.setItem(TOKEN_KEY, tok);
+    updateTokenStatus();
+    closeModal("tokenModal");
+    toast("Token validé", "success");
+    ghPullNow();
+  } catch (e) { toast("Token invalide: " + e.message, "error"); }
+}
+
+function updateTokenStatus() {
+  const t = getToken();
+  $("tokenStatus").textContent = t ? `Configuré (${t.slice(0, 12)}…)` : "Non configuré";
+}
+
+async function ghGetFile(path) {
+  const tok = getToken(); if (!tok) return null;
+  const r = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${path}?ref=master`, {
+    headers: { Authorization: "Bearer " + tok, Accept: "application/vnd.github+json" }
+  });
+  if (r.status === 404) return { sha: null, content: null };
+  if (!r.ok) throw new Error("GH GET " + r.status);
+  const j = await r.json();
+  return { sha: j.sha, content: base64ToUtf8(j.content) };
+}
+
+async function ghPutFile(path, contentStr, message, sha=null) {
+  const tok = getToken(); if (!tok) throw new Error("Pas de token");
+  const body = {
+    message, content: utf8ToBase64(contentStr), branch: "master",
+    ...(sha ? { sha } : {})
+  };
+  const r = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${path}`, {
+    method: "PUT",
+    headers: { Authorization: "Bearer " + tok, Accept: "application/vnd.github+json", "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) {
+    const j = await r.json().catch(() => ({}));
+    throw new Error("GH PUT " + r.status + " " + (j.message || ""));
+  }
+  return r.json();
+}
+
+function scheduleGhPush() {
+  if (!getToken()) return;
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(ghPushNow, PUSH_DEBOUNCE_MS);
+}
+
+async function ghPushNow() {
+  if (!getToken()) { toast("Configure le token GitHub", "error"); return; }
+  $("syncDot").className = "sync-dot warn";
+  try {
+    let sha = null;
+    try { const cur = await ghGetFile(GH_PATH); sha = cur?.sha; } catch {}
+    const json = JSON.stringify(D, null, 2);
+    await ghPutFile(GH_PATH, json, `sync: ${new Date().toISOString()}`, sha);
+    // Backup TXT lisible
+    try {
+      let bsha = null; try { const cur = await ghGetFile(GH_BACKUP_PATH); bsha = cur?.sha; } catch {}
+      await ghPutFile(GH_BACKUP_PATH, makeTxtBackup(), `sync backup: ${new Date().toISOString()}`, bsha);
+    } catch (e) { console.warn("backup TXT échoué", e); }
+    $("syncDot").className = "sync-dot ok";
+    toast("Synchronisé", "success");
+  } catch (e) {
+    $("syncDot").className = "sync-dot err";
+    toast("Push échec: " + e.message, "error");
+  }
+}
+
+async function ghPullNow() {
+  if (!getToken()) { toast("Configure le token GitHub", "error"); return; }
+  $("syncDot").className = "sync-dot warn";
+  try {
+    const cur = await ghGetFile(GH_PATH);
+    if (!cur || !cur.content) { toast("Rien sur GitHub (1er sync)", ""); $("syncDot").className = "sync-dot ok"; ghPushNow(); return; }
+    const remote = JSON.parse(cur.content);
+    const merged = mergeData(D, remote);
+    D = merged;
+    saveLocal(false); // pas de nouvelle modif locale
+    refreshAll();
+    $("syncDot").className = "sync-dot ok";
+    toast("Pull OK", "success");
+  } catch (e) {
+    $("syncDot").className = "sync-dot err";
+    toast("Pull échec: " + e.message, "error");
+  }
+}
+
+function mergeData(local, remote) {
+  // Merge intelligent : union par ID, tombstones, dernier modifié gagne au niveau global
+  const out = {
+    positions: [], alertes: [], watchlist: [],
+    deletedIds: [...(local.deletedIds || []), ...(remote.deletedIds || [])]
+      .filter((v,i,a) => a.findIndex(x => x.id === v.id) === i),
+    lastModified: Math.max(local.lastModified || 0, remote.lastModified || 0),
+    schemaVersion: Math.max(local.schemaVersion || 1, remote.schemaVersion || 1),
+  };
+  const deleted = new Set(out.deletedIds.map(d => d.id));
+  // Pour chaque collection : union par ID, en privilégiant local pour les doublons
+  for (const key of ["positions", "alertes", "watchlist"]) {
+    const map = new Map();
+    for (const r of (remote[key] || [])) if (!deleted.has(r.id)) map.set(r.id, r);
+    for (const l of (local[key] || [])) if (!deleted.has(l.id)) map.set(l.id, { ...map.get(l.id), ...l });
+    out[key] = [...map.values()];
+  }
+  return out;
+}
+
+function makeTxtBackup() {
+  const lines = [
+    `Portfolio Tracker — Backup`,
+    `Date : ${new Date().toLocaleString("fr-FR")}`,
+    `Lignes : ${D.positions.length} positions, ${D.alertes.length} alertes, ${D.watchlist.length} watchlist`,
+    ``,
+    `=== POSITIONS ===`,
+    ...D.positions.map(p => `${p.ticker} | ${p.nom || ""} | ${p.type} | ${p.quantite} × ${p.prix_achat} ${p.devise} | achat ${p.date_achat}`),
+    ``,
+    `=== ALERTES ===`,
+    ...D.alertes.map(a => `${a.ticker} | bas ${a.seuil_bas ?? "-"} | haut ${a.seuil_haut ?? "-"}`),
+    ``,
+    `=== WATCHLIST ===`,
+    ...D.watchlist.map(w => `${w.ticker} | ${w.nom || ""} | ${w.secteur || ""} | ${w.note || ""}`),
+  ];
+  return lines.join("\n");
+}
+
+// ============================================================================
+// SETTINGS / DATA
+// ============================================================================
+function exportJson() {
+  const blob = new Blob([JSON.stringify(D, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `portfolio-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+function importJson(ev) {
+  const f = ev.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const j = JSON.parse(r.result);
+      if (!confirm("Remplacer les données locales par ce fichier ?")) return;
+      D = { ...D, ...j }; saveLocal(); refreshAll();
+      toast("Import OK", "success");
+    } catch (e) { toast("Fichier invalide", "error"); }
+  };
+  r.readAsText(f);
+}
+function resetAll() {
+  if (!confirm("Tout effacer (positions, alertes, watchlist) ?")) return;
+  if (!confirm("Vraiment ? Cette action est irréversible côté local.")) return;
+  D = { positions: [], alertes: [], watchlist: [], deletedIds: [], lastModified: Date.now(), schemaVersion: 1 };
+  saveLocal(); refreshAll();
+  toast("Tout effacé", "success");
+}
+async function forceUpdate() {
+  if ("serviceWorker" in navigator) {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    for (const r of regs) await r.unregister();
+  }
+  if ("caches" in window) {
+    const keys = await caches.keys();
+    for (const k of keys) await caches.delete(k);
+  }
+  toast("Cache vidé, rechargement…");
+  setTimeout(() => location.reload(), 800);
+}
+
+// ============================================================================
+// CONSEILS — moteur d'analyse
+// ============================================================================
+// Profil de risque par ticker connu (1=très faible, 5=très élevé)
+const RISK_PROFILE = {
+  "CW8.PA": 2,   // ETF World ultra-diversifié
+  "500.PA": 3,   // S&P 500 — concentré US mais 500 lignes
+  "AASI.PA": 4,  // EM Asia — émergents, plus volatil
+  "AEEM.PA": 4,
+  "GC=F": 2,     // Or, faible vola long terme
+  "RKLB": 5,     // Mid cap spatial, très volatil
+  "NVDA": 4,     // Large cap mais cyclique IA
+  "PLTR": 5,     // Volatilité forte
+  "SMCI": 5,     // Très volatil, gouvernance fragile
+  "ANET": 3,     // Solide mais cyclique
+  "TSLA": 5, "AAPL": 3, "MSFT": 3, "GOOGL": 3, "META": 4, "AMZN": 3,
+};
+function riskOf(ticker, type) {
+  if (RISK_PROFILE[ticker]) return RISK_PROFILE[ticker];
+  if (type === "ETF") return 3;
+  if (type === "Or") return 2;
+  if (type === "Action") return 4;
+  return 3;
+}
+const RISK_LABEL = { 1: "Très faible", 2: "Faible", 3: "Modéré", 4: "Élevé", 5: "Très élevé" };
+
+function riskBar(level) {
+  let bars = '<span class="risk-bar">';
+  for (let i = 1; i <= 5; i++) bars += `<span class="${i <= level ? 'on' + level : ''}"></span>`;
+  bars += `</span>`;
+  return `<div class="risk-box">
+    ${bars}
+    <span class="risk-label risk-${level}">Risque ${RISK_LABEL[level]} · ${level}/5</span>
+  </div>`;
+}
+function riskPill(level) {
+  return `<span class="risk-pill r${level}">⚠ R${level} ${RISK_LABEL[level]}</span>`;
+}
+
+// Allocation cible utilisateur
+const ALLOC_CIBLE_ETF = { "CW8.PA": 50, "500.PA": 30, "AASI.PA": 20 };
+
+// Calcul moyenne mobile
+function ma(values, n) {
+  if (values.length < n) return null;
+  const slice = values.slice(-n);
+  return slice.reduce((a, b) => a + b, 0) / n;
+}
+
+// Volatilité (écart-type des rendements quotidiens, annualisée)
+function volAnnualisee(closes) {
+  if (closes.length < 30) return null;
+  const rets = [];
+  for (let i = 1; i < closes.length; i++) rets.push(closes[i] / closes[i - 1] - 1);
+  const m = rets.reduce((a, b) => a + b, 0) / rets.length;
+  const v = rets.reduce((s, r) => s + (r - m) ** 2, 0) / rets.length;
+  return Math.sqrt(v) * Math.sqrt(252) * 100; // en %
+}
+
+function conseilCard(action, titre, explication, risk=null) {
+  const actionMap = { buy: "Acheter", sell: "Vendre", hold: "Conserver", warn: "Attention", info: "Info", reinforce: "Renforcer", lighten: "Alléger", dca: "DCA" };
+  const cls = ["buy","reinforce","dca"].includes(action) ? "buy"
+            : ["sell","lighten"].includes(action) ? "sell"
+            : action === "hold" ? "hold"
+            : action === "warn" ? "warn" : "info";
+  const cls2 = ["buy","reinforce","dca"].includes(action) ? "action-buy"
+             : ["sell","lighten"].includes(action) ? "action-sell"
+             : action === "hold" ? "action-hold"
+             : action === "warn" ? "action-warn" : "action-info";
+  return `<div class="conseil ${cls2}">
+    <div class="conseil-head">
+      <span class="conseil-titre">${titre}</span>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        ${risk != null ? riskPill(risk) : ""}
+        <span class="conseil-action ${cls}">${actionMap[action] || action}</span>
+      </div>
+    </div>
+    ${risk != null ? riskBar(risk) : ""}
+    <div class="conseil-explication">${explication}</div>
+  </div>`;
+}
+
+// === Allocation cible PROFIL PRUDENT ===
+// Socle ETF 75-80%, IA via large cap 5-8%, spatial 1-2%, or 5-15%
+const ALLOC_RECO_PRUDENT = {
+  "CW8.PA":  { cible: 50, role: "Socle mondial — 1 600 entreprises, le plus diversifié",       cat: "ETF" },
+  "500.PA":  { cible: 22, role: "Renforcement US — moteur historique de la croissance",         cat: "ETF" },
+  "AASI.PA": { cible: 8,  role: "Asie émergente — Inde/Chine/Corée, croissance long terme",    cat: "ETF" },
+  "NVDA":    { cible: 6,  role: "Exposition IA via leader large cap (moat fort)",               cat: "Action" },
+  "RKLB":    { cible: 2,  role: "Pari spatial — petite ligne, fortement volatile",              cat: "Action" },
+  "GC=F":    { cible: 12, role: "Or physique — couverture inflation et crise",                  cat: "Or" },
+};
+
+async function renderConseils() {
+  $("conseilsPlan").innerHTML = '<div class="empty"><span class="loader"></span> Analyse…</div>';
+  $("conseilsGlobal").innerHTML = "";
+  $("conseilsPositions").innerHTML = "";
+  $("conseilsWatchlist").innerHTML = "";
+  $("conseilsRappels").innerHTML = "";
+
+  // 1. Valoriser les positions
+  const valos = await Promise.all(D.positions.map(valorise));
+  const valids = valos.filter(p => !p.error);
+  const totalEur = valids.reduce((s, p) => s + p.valeur_eur, 0);
+
+  // === PLAN D'ACTION RECOMMANDÉ (profil prudent) ===
+  const planCards = [];
+  const propositions = []; // spectre de propositions concrètes
+
+  // Bandeau risque global (toujours en tête, très visible)
+  if (totalEur > 0) {
+    const riskMoy = valids.reduce((s, p) => s + riskOf(p.ticker, p.type) * p.valeur_eur, 0) / totalEur;
+    const riskRound = Math.max(1, Math.min(5, Math.round(riskMoy)));
+    const riskTxt = riskMoy < 2.5 ? "PRUDENT — bon pour ton profil" :
+                    riskMoy < 3.5 ? "ÉQUILIBRÉ — acceptable pour profil prudent" :
+                    riskMoy < 4.2 ? "DYNAMIQUE — au-dessus de ton profil prudent, à surveiller" :
+                    "AGRESSIF — incompatible avec un profil prudent, à corriger";
+    let bars = '<span class="risk-bar">';
+    for (let i = 1; i <= 5; i++) bars += `<span class="${i <= riskRound ? 'on' + riskRound : ''}"></span>`;
+    bars += '</span>';
+    planCards.push(`<div class="risk-banner r${riskRound}">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <span class="risk-banner-title">Risque global du portefeuille</span>
+        ${bars}
+      </div>
+      <div class="risk-banner-value risk-${riskRound}">${RISK_LABEL[riskRound].toUpperCase()} · ${riskMoy.toFixed(1)}/5</div>
+      <div style="font-size:13px;color:var(--text);">${riskTxt}</div>
+    </div>`);
+  }
+
+  if (totalEur < 100) {
+    planCards.push(conseilCard("info", "Démarrage — plan recommandé profil prudent",
+      `<strong>Pour commencer (premier mois) :</strong><br>
+       1. <strong>50% CW8.PA</strong> (Amundi MSCI World) — socle mondial<br>
+       2. <strong>22% 500.PA</strong> (Amundi S&P 500) — renforcement US<br>
+       3. <strong>8% AASI.PA</strong> (Amundi MSCI EM Asia) — diversification croissance Asie<br>
+       4. <strong>6% NVDA</strong> — exposition IA via le leader large cap (le plus solide du secteur)<br>
+       5. <strong>2% RKLB</strong> — pari spatial petite ligne, en attendant SpaceX<br>
+       6. <strong>12% Or physique</strong> (Godot & Fils) — couverture inflation/crise<br><br>
+       <strong>Démarre par 200-500 € par mois en DCA</strong> sur les ETF (CW8 + 500 + AASI), et achète les actions ponctuellement quand le timing est bon (voir conseils ci-dessous). L'or se constitue progressivement (lingotin de 50g typiquement).`));
+  } else {
+    // Comparer allocation actuelle vs cible et générer propositions
+    const ecarts = [];
+    for (const [tk, def] of Object.entries(ALLOC_RECO_PRUDENT)) {
+      const pos = valids.find(p => p.ticker === tk);
+      const reel = pos ? pos.valeur_eur / totalEur * 100 : 0;
+      ecarts.push({ ticker: tk, ...def, reel, ecart: reel - def.cible });
+    }
+    // Tri par |ecart| décroissant pour prioriser
+    ecarts.sort((a, b) => Math.abs(b.ecart) - Math.abs(a.ecart));
+
+    let html = `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Total portefeuille : <strong style="color:var(--text);">${fmt.eur(totalEur)}</strong> · profil prudent · socle ETF 80% + actions ciblées 8% + or 12%</div>`;
+    html += `<table style="width:100%;font-size:13px;border-collapse:collapse;">`;
+    html += `<thead><tr style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.5px;">
+      <th style="text-align:left;padding:6px 4px;">Ligne</th>
+      <th style="text-align:right;padding:6px 4px;">Actuel</th>
+      <th style="text-align:right;padding:6px 4px;">Cible</th>
+      <th style="text-align:right;padding:6px 4px;">Action</th></tr></thead><tbody>`;
+    for (const e of ecarts.sort((a,b)=>b.cible-a.cible)) {
+      const dEur = (e.ecart / 100) * totalEur;
+      let action = "OK";
+      let color = "var(--muted)";
+      if (e.ecart < -3) { action = `+${fmt.eur(-dEur)}`; color = "var(--green)"; propositions.push({type:"renforcer", ticker: e.ticker, eur: -dEur, role: e.role}); }
+      else if (e.ecart > 3) { action = `−${fmt.eur(dEur)}`; color = "var(--red)"; propositions.push({type:"alleger", ticker: e.ticker, eur: dEur, role: e.role}); }
+      else if (e.reel === 0) { action = `Acheter`; color = "var(--accent)"; propositions.push({type:"ouvrir", ticker: e.ticker, eur: -dEur, role: e.role}); }
+      html += `<tr style="border-top:1px solid var(--border);">
+        <td style="padding:8px 4px;"><strong style="color:var(--accent);">${e.ticker}</strong> <span style="color:var(--muted);font-size:11px;">${e.cat}</span></td>
+        <td style="text-align:right;padding:8px 4px;font-variant-numeric:tabular-nums;">${e.reel.toFixed(1)}%</td>
+        <td style="text-align:right;padding:8px 4px;font-variant-numeric:tabular-nums;">${e.cible}%</td>
+        <td style="text-align:right;padding:8px 4px;color:${color};font-weight:600;">${action}</td></tr>`;
+    }
+    html += `</tbody></table>`;
+    planCards.push(`<div style="background:var(--bg-3);padding:14px;border-radius:10px;margin-bottom:10px;">${html}</div>`);
+
+    // Spectre de propositions
+    if (propositions.length) {
+      let propHtml = `<div style="font-weight:600;margin-bottom:8px;font-size:13px;">📋 Propositions concrètes pour rééquilibrer :</div>`;
+      for (const p of propositions.slice(0, 6)) {
+        const verb = p.type === "renforcer" ? "Renforcer" : p.type === "alleger" ? "Alléger" : "Ouvrir une ligne";
+        const couleur = p.type === "alleger" ? "var(--red)" : "var(--green)";
+        propHtml += `<div class="conseil ${p.type === "alleger" ? "action-sell" : "action-buy"}">
+          <div class="conseil-head">
+            <span class="conseil-titre">${verb} ${p.ticker} — ${fmt.eur(p.eur)}</span>
+            <span class="conseil-action ${p.type === "alleger" ? "sell" : "buy"}">${p.type === "alleger" ? "Alléger" : "Acheter"}</span>
+          </div>
+          <div class="conseil-explication">${p.role}.<br>
+          ${p.type === "renforcer" || p.type === "ouvrir" ? `Cible : passer de ${(propositions.find(x=>x.ticker===p.ticker)?.reel || 0).toFixed(1)}% à ${ALLOC_RECO_PRUDENT[p.ticker].cible}%. <strong>Étale en DCA sur 2-3 mois</strong> plutôt que d'acheter tout d'un coup.` : `Sécurise une partie des gains. Ne vends pas tout d'un coup, garde une exposition résiduelle.`}</div>
+        </div>`;
+      }
+      planCards.push(propHtml);
+    } else {
+      planCards.push(conseilCard("hold", "Allocation conforme à la cible",
+        `Tes positions sont alignées avec le plan profil prudent. <strong>Continue le DCA mensuel</strong> sur CW8 + 500 + AASI, et surveille les opportunités d'achat ponctuel sur la watchlist.`));
+    }
+  }
+
+  $("conseilsPlan").innerHTML = planCards.join("");
+
+  // === Diagnostic global ===
+  const globalCards = [];
+
+  if (totalEur === 0) {
+    globalCards.push(conseilCard("info", "Portefeuille vide", "Ajoute tes premières positions pour activer l'analyse fine."));
+  } else {
+    // Concentration — seuils profil prudent (max 3% par action volatile, 25% par ETF)
+    const actionsIndividuelles = valids.filter(p => p.type === "Action");
+    for (const a of actionsIndividuelles) {
+      const part = a.valeur_eur / totalEur * 100;
+      const risk = riskOf(a.ticker, a.type);
+      const seuil = risk >= 4 ? 3 : risk === 3 ? 6 : 10;
+      if (part > seuil) {
+        globalCards.push(conseilCard("warn", `${a.ticker} : ${part.toFixed(1)}% du portefeuille (seuil prudent : ${seuil}%)`,
+          `Action de risque ${RISK_LABEL[risk]}. Pour un profil prudent, on limite chaque action individuelle volatile à <strong>${seuil}% max</strong>. <strong>Allège progressivement</strong> ou laisse les ETF diluer en renforçant le socle.`));
+      }
+    }
+
+    // Concentration globale
+    const partMax = Math.max(...valids.map(p => p.valeur_eur)) / totalEur * 100;
+    const tickerMax = valids.find(p => p.valeur_eur === Math.max(...valids.map(x => x.valeur_eur))).ticker;
+    if (partMax > 60) {
+      globalCards.push(conseilCard("warn", `Concentration excessive sur ${tickerMax} (${partMax.toFixed(0)}%)`,
+        `Une seule ligne pèse plus de 60% du portefeuille. <strong>Risque très élevé</strong> : diversifie en renforçant les autres ETF.`));
+    } else if (partMax < 55 && valids.length >= 4) {
+      globalCards.push(conseilCard("hold", `Diversification correcte`,
+        `La plus grosse ligne représente ${partMax.toFixed(0)}%. <strong>Bonne répartition</strong>, ton risque idiosyncrasique est limité.`));
+    }
+
+    // Allocation ETF vs cible
+    const etfTotal = valids.filter(p => p.type === "ETF").reduce((s, p) => s + p.valeur_eur, 0);
+    if (etfTotal > 0) {
+      for (const [tk, cible] of Object.entries(ALLOC_CIBLE_ETF)) {
+        const pos = valids.find(p => p.ticker === tk);
+        if (!pos) continue;
+        const reel = pos.valeur_eur / etfTotal * 100;
+        const ecart = reel - cible;
+        if (Math.abs(ecart) > 8) {
+          globalCards.push(conseilCard(ecart > 0 ? "lighten" : "reinforce",
+            `${tk} ${ecart > 0 ? "sur-pondéré" : "sous-pondéré"} (${reel.toFixed(0)}% vs ${cible}% cible)`,
+            `Au sein de ta poche ETF, ${tk} représente <strong>${reel.toFixed(0)}%</strong> alors que ta cible est <strong>${cible}%</strong>. ${ecart > 0 ? "Lors du prochain DCA, renforce les autres ETF plutôt que celui-ci pour rééquilibrer." : "Lors du prochain DCA, oriente prioritairement vers ce ticker pour rattraper la cible."}`));
         }
       }
     }
-  });
-}
 
-// ----------------------------------------------------------------------
-// Line chart : on agrège l'historique des positions pondérées
-// ----------------------------------------------------------------------
-async function loadHistory() {
-  const period = document.getElementById("historyPeriod").value;
-  const positions = currentData.positions.filter(p => !p.error);
-  if (!positions.length) { renderLineChart([], []); return; }
-
-  // Récupère historique par ticker en // (limité au dernier ticker pour démo)
-  // Pour rester simple : on prend le 1er ETF principal pour la courbe
-  const main = positions[0];
-  try {
-    const res = await fetch(`${API}/api/history/${encodeURIComponent(main.ticker)}?period=${period}`);
-    const json = await res.json();
-    const labels = json.data.map(d => d.date);
-    const values = json.data.map(d => d.close * main.quantite);
-    renderLineChart(labels, values, main.ticker);
-  } catch (e) { console.error(e); }
-}
-
-function renderLineChart(labels, values, ticker = "") {
-  if (lineChart) lineChart.destroy();
-  lineChart = new Chart(document.getElementById("lineChart"), {
-    type: "line",
-    data: {
-      labels,
-      datasets: [{
-        label: ticker || "Valeur",
-        data: values,
-        borderColor: "#d4af37",
-        backgroundColor: "rgba(212,175,55,0.08)",
-        tension: 0.3, fill: true, pointRadius: 0, borderWidth: 2,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: "#8a94a6", maxTicksLimit: 8 }, grid: { color: "#262c38" } },
-        y: { ticks: { color: "#8a94a6" }, grid: { color: "#262c38" } }
-      }
+    // Exposition devise
+    const expoUSD = valids.filter(p => p.devise === "USD" && p.type !== "Or").reduce((s, p) => s + p.valeur_eur, 0);
+    const partUSD = expoUSD / totalEur * 100;
+    if (partUSD > 50) {
+      globalCards.push(conseilCard("warn", `Forte exposition USD (${partUSD.toFixed(0)}%)`,
+        `Plus de la moitié de ton portefeuille est en dollars. <strong>Risque de change</strong> : si l'euro s'apprécie, tes gains en € baissent même si les actions montent. Surveille EUR/USD.`));
     }
-  });
-}
 
-// ----------------------------------------------------------------------
-// Watchlist
-// ----------------------------------------------------------------------
-async function loadWatchlist() {
-  try {
-    const res = await fetch(API + "/api/watchlist");
-    const items = await res.json();
-    const tb = document.getElementById("watchlistBody");
-    if (!items.length) {
-      tb.innerHTML = '<tr><td colspan="7" class="empty">Watchlist vide.</td></tr>';
-      return;
+    // Or
+    const orTotal = valids.filter(p => p.type === "Or").reduce((s, p) => s + p.valeur_eur, 0);
+    const partOr = orTotal / totalEur * 100;
+    if (partOr === 0 && totalEur > 5000) {
+      globalCards.push(conseilCard("info", "Pas de couverture or",
+        `Tu n'as pas d'or physique. Pour un portefeuille croissance comme le tien, <strong>5 à 15% d'or</strong> est souvent recommandé comme couverture inflation/crise. À considérer si ton portefeuille dépasse 10 k€.`));
+    } else if (partOr > 25) {
+      globalCards.push(conseilCard("warn", `Or sur-pondéré (${partOr.toFixed(0)}%)`,
+        `L'or représente plus du quart du portefeuille. C'est défensif mais <strong>limite la croissance long terme</strong>. Cible recommandée : 5 à 15%.`));
+    } else if (partOr > 0 && partOr <= 15) {
+      globalCards.push(conseilCard("hold", `Or bien dosé (${partOr.toFixed(0)}%)`,
+        `Ton allocation or est dans la fourchette saine (5–15%). <strong>Bonne couverture</strong> sans sacrifier la croissance.`));
     }
-    tb.innerHTML = items.map(w => `
-      <tr>
-        <td class="ticker-cell">${w.ticker}</td>
-        <td>${w.nom || w.name || "—"}</td>
-        <td style="color:var(--muted);">${w.secteur || ""}</td>
-        <td class="num">${w.price ? fmt.num(w.price, 2) + " " + (w.currency || "") : "—"}</td>
-        <td class="num ${clsPv(w.change_pct)}">${w.change_pct != null ? fmt.pct(w.change_pct) : "—"}</td>
-        <td style="color:var(--muted);font-size:12px;">${w.note || ""}</td>
-        <td><button class="danger" onclick="delWatchlist('${w.id}')">×</button></td>
-      </tr>
-    `).join("");
-  } catch (e) { console.error(e); }
-}
 
-// ----------------------------------------------------------------------
-// Actions CRUD
-// ----------------------------------------------------------------------
-function openAddModal() {
-  document.getElementById("f_date").value = new Date().toISOString().slice(0, 10);
-  document.getElementById("addModal").classList.add("active");
-  updateQteHint();
-}
-function openAlertModal() { document.getElementById("alertModal").classList.add("active"); }
-function openWatchlistModal() { document.getElementById("watchlistModal").classList.add("active"); }
-function closeModal(id) { document.getElementById(id).classList.remove("active"); }
-
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("f_type").addEventListener("change", updateQteHint);
-});
-function updateQteHint() {
-  const t = document.getElementById("f_type").value;
-  document.getElementById("f_qte_hint").textContent = t === "Or" ? "(en grammes)" : "";
-}
-
-async function addPosition() {
-  const payload = {
-    ticker: document.getElementById("f_ticker").value.trim(),
-    nom: document.getElementById("f_nom").value.trim(),
-    type: document.getElementById("f_type").value,
-    devise: document.getElementById("f_devise").value,
-    quantite: parseFloat(document.getElementById("f_quantite").value),
-    prix_achat: parseFloat(document.getElementById("f_prix").value),
-    date_achat: document.getElementById("f_date").value,
-  };
-  if (!payload.ticker || !payload.quantite || !payload.prix_achat) {
-    alert("Ticker, quantité et prix sont requis");
-    return;
+    // Risque global moyen pondéré
+    const riskMoy = valids.reduce((s, p) => s + riskOf(p.ticker, p.type) * p.valeur_eur, 0) / totalEur;
+    const riskRound = Math.round(riskMoy);
+    globalCards.push(conseilCard("info",
+      `Risque global du portefeuille : ${RISK_LABEL[riskRound]} (${riskMoy.toFixed(1)}/5)`,
+      `Calculé sur la moyenne pondérée des risques de chaque ligne. ${
+        riskMoy < 2.5 ? "<strong>Profil prudent</strong> — croissance limitée mais drawdowns plus doux." :
+        riskMoy < 3.5 ? "<strong>Profil équilibré</strong> — bon compromis croissance/sécurité." :
+        riskMoy < 4.2 ? "<strong>Profil dynamique</strong> — bonne croissance attendue mais volatilité forte (drawdowns possibles -30%)." :
+        "<strong>Profil agressif</strong> — fort potentiel mais aussi forte volatilité. Assure-toi de pouvoir tenir psychologiquement des baisses de -50%."
+      }`, riskRound));
   }
-  const res = await fetch(API + "/api/portfolio", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (res.ok) {
-    closeModal("addModal");
-    ["f_ticker","f_nom","f_quantite","f_prix"].forEach(id => document.getElementById(id).value = "");
-    refreshAll();
+
+  $("conseilsGlobal").innerHTML = globalCards.join("");
+
+  // === Conseils par position (basé sur MM50/MM200, vola, PV%) ===
+  if (!valids.length) {
+    $("conseilsPositions").innerHTML = '<div class="empty">Aucune position à analyser.</div>';
   } else {
-    const e = await res.json();
-    alert("Erreur : " + (e.error || "inconnue"));
+    const cards = await Promise.all(valids.map(async (p) => {
+      let hist = null, ma50 = null, ma200 = null, vol = null, gap200 = null;
+      try {
+        hist = await fetchYahooHistory(p.ticker, "1y");
+        const closes = hist.map(d => d.close);
+        ma50 = ma(closes, 50);
+        ma200 = ma(closes, 200);
+        vol = volAnnualisee(closes);
+        if (ma200 && p.prix_actuel) gap200 = (p.prix_actuel - ma200) / ma200 * 100;
+      } catch {}
+      return analysePosition(p, { ma50, ma200, vol, gap200 });
+    }));
+    $("conseilsPositions").innerHTML = cards.join("");
   }
-}
 
-async function delPosition(id) {
-  if (!confirm("Supprimer cette position ?")) return;
-  await fetch(API + "/api/portfolio/" + id, { method: "DELETE" });
-  loadPortfolio();
-}
-
-async function addAlert() {
-  const payload = {
-    ticker: document.getElementById("a_ticker").value.trim(),
-    seuil_haut: document.getElementById("a_haut").value || null,
-    seuil_bas: document.getElementById("a_bas").value || null,
-  };
-  if (!payload.ticker) { alert("Ticker requis"); return; }
-  const res = await fetch(API + "/api/alerts", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (res.ok) {
-    closeModal("alertModal");
-    ["a_ticker","a_haut","a_bas"].forEach(id => document.getElementById(id).value = "");
-    loadPortfolio();
+  // === Watchlist : opportunités d'achat ===
+  if (!D.watchlist.length) {
+    $("conseilsWatchlist").innerHTML = '<div class="empty">Watchlist vide.</div>';
+  } else {
+    const cards = await Promise.all(D.watchlist.map(async (w) => {
+      try {
+        const q = await getQuote(w.ticker);
+        const hist = await fetchYahooHistory(w.ticker, "1y");
+        const closes = hist.map(d => d.close);
+        const m50 = ma(closes, 50);
+        const m200 = ma(closes, 200);
+        const vol = volAnnualisee(closes);
+        const gap200 = m200 ? (q.price - m200) / m200 * 100 : null;
+        const var1m = closes.length > 21 ? (q.price / closes[closes.length - 22] - 1) * 100 : null;
+        return analyseWatchlist(w, q, { m50, m200, vol, gap200, var1m });
+      } catch (e) {
+        return conseilCard("info", w.ticker, `Données indisponibles : ${e.message}`);
+      }
+    }));
+    $("conseilsWatchlist").innerHTML = cards.join("");
   }
+
+  // === Rappels ===
+  $("conseilsRappels").innerHTML = [
+    conseilCard("info", "PEA — règle des 5 ans",
+      `Tout retrait avant 5 ans d'ouverture <strong>clôture le PEA</strong> et déclenche la flat tax 30% sur les plus-values. Plafond versements : 150 000 €. Après 5 ans : exonération IR (mais 17,2% prélèvements sociaux restent).`),
+    conseilCard("info", "Or physique — fiscalité",
+      `Régime PV réelle (36,2%) si factures conservées, sinon forfait 11,5%. <strong>Abattement 5%/an dès la 3e année</strong>, exonération totale après 22 ans de détention. Garde précieusement les factures Godot & Fils.`),
+    conseilCard("info", "DCA — règle d'or",
+      `Le DCA (investissement programmé mensuel) <strong>élimine le timing</strong> et lisse les points d'entrée. C'est la stratégie la plus efficace pour un débutant long terme. Continue régulièrement, même quand le marché baisse — surtout quand il baisse.`),
+    conseilCard("warn", "Ne jamais investir l'argent dont tu pourrais avoir besoin à court terme",
+      `Garde toujours <strong>3 à 6 mois de dépenses en livret A/LDDS</strong> avant d'investir. En cas de crise, tu ne veux pas être forcé de vendre tes ETF en perte.`),
+  ].join("");
 }
 
-async function delAlert(id) {
-  await fetch(API + "/api/alerts/" + id, { method: "DELETE" });
-  loadPortfolio();
-}
+function analysePosition(p, sig) {
+  const risk = riskOf(p.ticker, p.type);
+  const titre = `${p.ticker} — ${p.nom || p.name || ""}`;
+  const parts = [];
 
-async function addWatchlist() {
-  const payload = {
-    ticker: document.getElementById("w_ticker").value.trim(),
-    nom: document.getElementById("w_nom").value.trim(),
-    secteur: document.getElementById("w_secteur").value.trim(),
-    note: document.getElementById("w_note").value.trim(),
-  };
-  if (!payload.ticker) { alert("Ticker requis"); return; }
-  const res = await fetch(API + "/api/watchlist", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (res.ok) {
-    closeModal("watchlistModal");
-    ["w_ticker","w_nom","w_secteur","w_note"].forEach(id => document.getElementById(id).value = "");
-    loadWatchlist();
+  // 1. Tendance technique
+  if (sig.ma50 && sig.ma200) {
+    if (sig.ma50 > sig.ma200) {
+      parts.push(`Tendance long terme <strong>haussière</strong> (MM50 ${fmt.num(sig.ma50,2)} > MM200 ${fmt.num(sig.ma200,2)})`);
+    } else {
+      parts.push(`Tendance long terme <strong>baissière</strong> (MM50 ${fmt.num(sig.ma50,2)} < MM200 ${fmt.num(sig.ma200,2)})`);
+    }
   }
+  if (sig.gap200 != null) {
+    parts.push(`Cours actuel ${sig.gap200 > 0 ? "+" : ""}${sig.gap200.toFixed(1)}% vs MM200`);
+  }
+  if (sig.vol) parts.push(`Volatilité annualisée ~${sig.vol.toFixed(0)}%`);
+
+  // 2. Décision
+  let action, reco;
+  if (p.pv_pct < -25 && risk >= 4) {
+    action = "warn"; reco = `<strong>Forte perte (${p.pv_pct.toFixed(0)}%) sur un titre risqué.</strong> À ce stade, deux options : couper la perte si la thèse a changé, ou DCA si tu crois toujours à la société. Ne fais rien dans la panique.`;
+  } else if (p.pv_pct > 50 && p.type === "Action") {
+    action = "lighten"; reco = `<strong>Belle plus-value (+${p.pv_pct.toFixed(0)}%).</strong> Sur une action individuelle, prendre <strong>une partie</strong> des bénéfices (ex. 25-30%) sécurise le gain et réduit la concentration. Garder le reste pour la suite.`;
+  } else if (sig.gap200 != null && sig.gap200 < -15 && p.type === "ETF" && sig.ma50 && sig.ma200 && sig.ma50 > sig.ma200 * 0.95) {
+    action = "reinforce"; reco = `<strong>ETF solide en repli temporaire (${sig.gap200.toFixed(0)}% sous MM200).</strong> Bonne fenêtre pour DCA / renforcement progressif. Reste régulier, n'achète pas tout d'un coup.`;
+  } else if (sig.gap200 != null && sig.gap200 > 25 && p.type === "Action") {
+    action = "warn"; reco = `<strong>Cours +${sig.gap200.toFixed(0)}% au-dessus de la MM200</strong> = forte sur-extension. Risque de correction. Pas le moment de renforcer, attends un retour vers la moyenne.`;
+  } else if (p.type === "ETF") {
+    action = "dca"; reco = `<strong>ETF de fond de portefeuille — continue le DCA mensuel.</strong> Pas de timing à faire, l'historique long terme du marché monde est positif (~7%/an net inflation).`;
+  } else if (p.type === "Or") {
+    action = "hold"; reco = `<strong>Conserver.</strong> L'or est une assurance, pas un actif de croissance. Ne le vends qu'en cas de besoin réel ou si la part dépasse 25% du portefeuille.`;
+  } else {
+    action = "hold"; reco = `Pas de signal fort. <strong>Conserver et surveiller.</strong>`;
+  }
+
+  const explication = `${parts.join(" · ")}.<br><br>${reco}`;
+  return conseilCard(action, titre, explication, risk);
 }
 
-async function delWatchlist(id) {
-  if (!confirm("Retirer de la watchlist ?")) return;
-  await fetch(API + "/api/watchlist/" + id, { method: "DELETE" });
-  loadWatchlist();
+// === Avis fondamental fixe par ticker connu (profil prudent) ===
+const AVIS_FONDAMENTAL = {
+  "NVDA": { verdict: "ACHAT progressif (DCA)", taille: "5-8% max du portefeuille",
+            rationale: "Leader mondial GPU IA, moat technologique très fort, marges record. Risque : valorisation tendue + concentration cyclique IA. <strong>Le moins risqué du secteur IA</strong> pour un débutant. Privilégier DCA mensuel petite somme plutôt qu'un gros achat unique." },
+  "RKLB": { verdict: "PETITE LIGNE spéculative", taille: "1-2% max du portefeuille",
+            rationale: "Mid cap spatial, pari long terme sur la mini-fusée Neutron. <strong>Très volatile</strong> (vola annuelle 80%+). Soit tu acceptes de perdre 50% sans paniquer, soit tu attends. Recommandé : 200-500 € max et tu oublies pendant 3-5 ans." },
+  "PLTR": { verdict: "PRUDENCE — attendre repli", taille: "1-2% max si tu veux",
+            rationale: "Software analytics IA (défense + privé). Croissance bonne mais valorisation EXTRÊME (PER >100 historiquement). <strong>Pour un profil prudent : écarter ou minuscule ligne</strong>. Risque de correction sévère." },
+  "SMCI": { verdict: "ÉCARTER", taille: "0% — ne pas toucher",
+            rationale: "Serveurs IA, croissance forte mais <strong>gouvernance fragile</strong> (problèmes comptables passés, retard reporting SEC). Volatilité extrême. <strong>Pas adapté à un profil prudent débutant</strong>. Si tu veux exposition serveurs IA, passe par NVDA ou un ETF tech." },
+  "ANET": { verdict: "ACHAT possible si correction", taille: "2-3% max",
+            rationale: "Réseau data centers IA, fondamentaux solides, moins volatil que NVDA. Plus mature, marge stable. <strong>Bon complément à NVDA</strong> pour diversifier l'exposition IA. Attendre un repli de 10-15% pour entrer." },
+  "TSLA": { verdict: "ÉVITER pour profil prudent", taille: "0-1% max",
+            rationale: "Volatilité extrême liée aux annonces d'Elon Musk. Trop spéculatif pour un débutant prudent. Si exposition souhaitée : minuscule ligne, ou via ETF Nasdaq." },
+  "AAPL": { verdict: "CONSERVER si possédée, achat opportuniste", taille: "5-8% max",
+            rationale: "Méga cap solide, dividende croissant, déjà incluse à ~7% dans CW8. Pas urgent d'en acheter en direct. Si tu veux : attendre repli >10%." },
+  "MSFT": { verdict: "ACHAT progressif possible", taille: "5-8% max",
+            rationale: "Méga cap solide, exposition cloud + IA via OpenAI. Déjà ~5% de CW8. Achat direct OK si tu veux surpondérer le tech US, sinon le World suffit." },
+};
+
+function analyseWatchlist(w, q, sig) {
+  const risk = riskOf(w.ticker, "Action");
+  const avis = AVIS_FONDAMENTAL[w.ticker];
+  const titre = `${w.ticker} — ${w.nom || q.name || ""} <span style="color:var(--muted);font-weight:400;font-size:12px;">${fmt.num(q.price,2)} ${q.currency}</span>`;
+  const parts = [];
+  if (sig.m50 && sig.m200) parts.push(`MM50 ${sig.m50 > sig.m200 ? ">" : "<"} MM200 (${sig.m50 > sig.m200 ? "tendance haussière" : "tendance baissière"})`);
+  if (sig.gap200 != null) parts.push(`${sig.gap200 > 0 ? "+" : ""}${sig.gap200.toFixed(1)}% vs MM200`);
+  if (sig.var1m != null) parts.push(`1 mois ${sig.var1m > 0 ? "+" : ""}${sig.var1m.toFixed(1)}%`);
+  if (sig.vol) parts.push(`vol ~${sig.vol.toFixed(0)}%/an`);
+
+  // Décision technique
+  let actionTech, recoTech;
+  if (sig.gap200 != null && sig.gap200 < -20 && sig.m50 && sig.m200 && sig.m50 > sig.m200) {
+    actionTech = "buy"; recoTech = `🟢 <strong>Configuration technique d'achat :</strong> repli marqué (${sig.gap200.toFixed(0)}% sous MM200) sur titre en tendance haussière long terme.`;
+  } else if (sig.gap200 != null && sig.gap200 > 30) {
+    actionTech = "warn"; recoTech = `🟡 <strong>Cours sur-étendu</strong> (+${sig.gap200.toFixed(0)}% au-dessus de la MM200). Attendre un repli avant d'entrer.`;
+  } else if (sig.m50 && sig.m200 && sig.m50 < sig.m200 && sig.gap200 != null && sig.gap200 < -10) {
+    actionTech = "warn"; recoTech = `🔴 <strong>Tendance baissière confirmée</strong>. Ne pas attraper le couteau qui tombe.`;
+  } else if (sig.var1m != null && sig.var1m > 15) {
+    actionTech = "hold"; recoTech = `🟡 Forte hausse récente (+${sig.var1m.toFixed(0)}% sur 1 mois) — risque de consolidation. Attendre.`;
+  } else {
+    actionTech = "hold"; recoTech = `Pas de signal technique fort à court terme.`;
+  }
+
+  // Combinaison fondamental + technique
+  let action = actionTech;
+  let bloc = "";
+  if (avis) {
+    bloc = `<div style="background:rgba(212,175,55,0.08);padding:8px 10px;border-radius:6px;margin-top:6px;">
+      <div style="font-weight:700;color:var(--accent);font-size:13px;">📌 Mon avis : ${avis.verdict}</div>
+      <div style="font-size:12px;color:var(--text);margin-top:3px;">Taille recommandée : <strong>${avis.taille}</strong></div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-top:6px;">${avis.rationale}</div>
+    </div>`;
+    // Si avis = ÉCARTER, on force action sell même si tech dit autre chose
+    if (avis.verdict.startsWith("ÉCARTER") || avis.verdict.startsWith("ÉVITER")) action = "sell";
+  } else {
+    bloc = `<div style="font-size:12px;color:var(--muted);margin-top:6px;"><em>Pas d'avis fondamental enregistré pour ${w.ticker}. Vérifie toi-même les fondamentaux (PER, croissance CA, dette) avant d'acheter.</em></div>`;
+  }
+
+  const explication = `${parts.join(" · ")}.<br>${w.note ? `<em style="color:var(--accent);">${w.note}</em><br>` : ""}<br>${recoTech}${bloc}`;
+  return conseilCard(action, titre, explication, risk);
 }
 
-// ----------------------------------------------------------------------
-// Refresh global + auto-refresh
-// ----------------------------------------------------------------------
-async function refreshAll() {
-  document.getElementById("lastUpdate").innerHTML = '<span class="loader"></span>';
-  await fetch(API + "/api/refresh");
-  await loadPortfolio();
-  await loadWatchlist();
-  await loadHistory();
+// ============================================================================
+// INIT
+// ============================================================================
+function bootstrapWatchlist() {
+  if (D.watchlist.length) return;
+  const defaults = [
+    { ticker: "RKLB", nom: "Rocket Lab", secteur: "Spatial", note: "Surveiller point entrée" },
+    { ticker: "NVDA", nom: "Nvidia", secteur: "Infrastructure IA", note: "Incontournable" },
+    { ticker: "PLTR", nom: "Palantir", secteur: "IA défense", note: "Fort potentiel" },
+    { ticker: "SMCI", nom: "Super Micro", secteur: "Serveurs IA", note: "Volatil" },
+    { ticker: "ANET", nom: "Arista Networks", secteur: "Réseau IA", note: "Solide" },
+  ];
+  D.watchlist = defaults.map(d => ({ id: uuid(), ...d }));
+  saveLocal(false);
 }
 
-// Auto refresh toutes les 60s
-setInterval(loadPortfolio, 60_000);
-setInterval(loadWatchlist, 60_000);
-
-// Boot
-loadPortfolio().then(loadHistory);
-loadWatchlist();
+window.addEventListener("DOMContentLoaded", async () => {
+  $("versionInfo").textContent = APP_VERSION;
+  loadLocal();
+  bootstrapWatchlist();
+  updateTokenStatus();
+  // Pull au boot si token présent
+  if (getToken()) { ghPullNow(); } else { refreshAll(); }
+  // SW
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(e => console.warn("SW", e));
+  }
+  // Auto-refresh toutes les 5 min en foreground
+  setInterval(() => { if (!document.hidden) refreshAll(); }, 5 * 60_000);
+});
 </script>
 
 </body>
