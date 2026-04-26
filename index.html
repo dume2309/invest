@@ -992,7 +992,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v2.9";
+const APP_VERSION = "v3.0";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1916,7 +1916,7 @@ async function ghPullNow() {
 function mergeData(local, remote) {
   // Merge intelligent : union par ID, tombstones, dernier modifié gagne au niveau global
   const out = {
-    positions: [], alertes: [], watchlist: [], analyses: [],
+    positions: [], alertes: [], watchlist: [], analyses: [], transactions: [],
     deletedIds: [...(local.deletedIds || []), ...(remote.deletedIds || [])]
       .filter((v,i,a) => a.findIndex(x => x.id === v.id) === i),
     lastModified: Math.max(local.lastModified || 0, remote.lastModified || 0),
@@ -1924,7 +1924,7 @@ function mergeData(local, remote) {
   };
   const deleted = new Set(out.deletedIds.map(d => d.id));
   // Pour chaque collection : union par ID, en privilégiant local pour les doublons
-  for (const key of ["positions", "alertes", "watchlist", "analyses"]) {
+  for (const key of ["positions", "alertes", "watchlist", "analyses", "transactions"]) {
     const map = new Map();
     for (const r of (remote[key] || [])) if (!deleted.has(r.id)) map.set(r.id, r);
     for (const l of (local[key] || [])) if (!deleted.has(l.id)) map.set(l.id, { ...map.get(l.id), ...l });
