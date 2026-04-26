@@ -823,7 +823,8 @@
     <div class="form-row">
       <label>Quoi as-tu acheté ?</label>
       <select id="x_ticker" onchange="toggleExpressFields()">
-        <option value="AWLD.PA">CW8.PA — Amundi MSCI World (recommandé démarrage)</option>
+        <option value="WPEA.PA">WPEA.PA — iShares MSCI World Swap PEA (~6 €/part, recommandé démarrage)</option>
+        <option value="EWLD.PA">EWLD.PA — Amundi MSCI World V Acc (~38 €/part)</option>
         <option value="500.PA">500.PA — Amundi S&P 500</option>
         <option value="AASI.PA">AASI.PA — Amundi MSCI EM Asia</option>
         <option value="NVDA">NVDA — Nvidia (USD)</option>
@@ -963,7 +964,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v2.3";
+const APP_VERSION = "v2.4";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1403,7 +1404,7 @@ function openExpressModal() {
   $("x_orQte").value = "";
   $("x_otherTicker").value = "";
   $("x_date").value = new Date().toISOString().slice(0, 10);
-  $("x_ticker").value = "AWLD.PA";
+  $("x_ticker").value = "WPEA.PA";
   $("x_preview").style.display = "none";
   toggleExpressFields();
   $("expressModal").classList.add("active");
@@ -1480,7 +1481,7 @@ async function saveExpressPosition() {
       const isAction = !tk.includes(".") || tk.endsWith(".US");
       type = isAction && tk !== "GC=F" ? "Action" : "ETF";
       // Heuristique : ETF Amundi reconnus
-      if (["AWLD.PA","500.PA","AASI.PA","AEEM.PA"].includes(tk)) type = "ETF";
+      if (["WPEA.PA","500.PA","AASI.PA","AEEM.PA"].includes(tk)) type = "ETF";
       if (["NVDA","RKLB","PLTR","SMCI","ANET","TSLA","AAPL","MSFT","GOOGL","AMZN","META"].includes(tk)) type = "Action";
       nom = q.name || tk;
     }
@@ -2040,8 +2041,8 @@ async function generateAutoAlerts() {
 
   // 5. MARCHÉ GLOBAL — repli ou surchauffe
   try {
-    const q = await getQuote("AWLD.PA");
-    const hist = await fetchYahooHistory("AWLD.PA", "6mo");
+    const q = await getQuote("WPEA.PA");
+    const hist = await fetchYahooHistory("WPEA.PA", "6mo");
     const closes = hist.map(d => d.close);
     const var1m = closes.length > 21 ? (q.price / closes[closes.length - 22] - 1) * 100 : 0;
     if (var1m < -8) {
@@ -2049,7 +2050,7 @@ async function generateAutoAlerts() {
         kind: "opportunite", emoji: "🌍", priority: 3,
         title: `Marché mondial en repli de ${var1m.toFixed(1)}% sur 1 mois`,
         body: `<strong>C'est une fenêtre d'achat</strong>. Les actions sont en solde. Si ton budget le permet, <strong>double ton DCA habituel ce mois</strong> (ex. 400-500 € au lieu de 200). Le marché remonte historiquement après ces phases.`,
-        action: { label: "💰 Je renforce CW8.PA", ticker: "AWLD.PA" },
+        action: { label: "💰 Je renforce CW8.PA", ticker: "WPEA.PA" },
       });
     }
     if (var1m > 12) {
@@ -2067,7 +2068,7 @@ async function generateAutoAlerts() {
       kind: "info", emoji: "🌱", priority: 5,
       title: "Tu n'as pas encore commencé",
       body: `Premier achat recommandé : <strong>100 € de CW8.PA</strong> (Amundi MSCI World). Ouvre l'onglet Positions et clique 💰 J'ai acheté quand c'est fait.`,
-      action: { label: "💰 Premier achat 100 € CW8.PA", ticker: "AWLD.PA", montant: 100 },
+      action: { label: "💰 Premier achat 100 € CW8.PA", ticker: "WPEA.PA", montant: 100 },
     });
   }
 
@@ -2130,7 +2131,7 @@ function getUserLevel() {
   const nbPos = D.positions.length;
   const nbTx = (D.transactions || []).length;
   const dates = D.positions.map(p => p.date_achat).filter(Boolean).sort();
-  const hasETFWorld = D.positions.some(p => p.ticker === "AWLD.PA");
+  const hasETFWorld = D.positions.some(p => p.ticker === "WPEA.PA");
   const hasSP500 = D.positions.some(p => p.ticker === "500.PA");
   const hasAsia = D.positions.some(p => p.ticker === "AASI.PA");
   const hasAction = D.positions.some(p => p.type === "Action");
@@ -2257,7 +2258,7 @@ async function renderPropositions() {
   const el = $("propositionsZone"); if (!el) return;
 
   // Calcul total ETF (CW8/500.PA/AASI/AEEM uniquement, pas or ni actions)
-  const ETF_TICKERS = ["AWLD.PA","500.PA","AASI.PA","AEEM.PA"];
+  const ETF_TICKERS = ["WPEA.PA","500.PA","AASI.PA","AEEM.PA"];
   let totalEtf = 0, totalAll = 0, totalOr = 0;
   for (const p of D.positions) {
     try {
@@ -2281,19 +2282,19 @@ async function renderPropositions() {
   // Construction des propositions selon la phase (% uniquement, pas de €)
   const props = [];
   if (phase === 0) {
-    props.push({ ticker: "AWLD.PA", part: 100, desc: "1er achat — l'ETF World, le plus diversifié (1 600 entreprises). Mets ce que tu peux : 50 €, 100 €, 200 €." });
+    props.push({ ticker: "WPEA.PA", part: 100, desc: "1er achat — l'ETF World, le plus diversifié (1 600 entreprises). Mets ce que tu peux : 50 €, 100 €, 200 €." });
   } else if (phase === 1) {
-    props.push({ ticker: "AWLD.PA", part: 100, desc: `Continue à 100% sur CW8.PA jusqu'à ~1 500 € (tu es à ${fmt.eur(total)}).` });
+    props.push({ ticker: "WPEA.PA", part: 100, desc: `Continue à 100% sur CW8.PA jusqu'à ~1 500 € (tu es à ${fmt.eur(total)}).` });
   } else if (phase === 2) {
-    props.push({ ticker: "AWLD.PA", part: 70, desc: "Socle mondial" });
+    props.push({ ticker: "WPEA.PA", part: 70, desc: "Socle mondial" });
     props.push({ ticker: "500.PA", part: 30, desc: "Renforcement US" });
   } else if (phase === 3) {
-    props.push({ ticker: "AWLD.PA", part: 60, desc: "Socle mondial" });
+    props.push({ ticker: "WPEA.PA", part: 60, desc: "Socle mondial" });
     props.push({ ticker: "500.PA", part: 25, desc: "Renforcement US" });
     props.push({ ticker: "AASI.PA", part: 15, desc: "Asie émergente (Inde, Chine, Corée)" });
   } else {
     // Phase 4 — diversification complète
-    props.push({ ticker: "AWLD.PA", part: 50, desc: "Socle mondial" });
+    props.push({ ticker: "WPEA.PA", part: 50, desc: "Socle mondial" });
     props.push({ ticker: "500.PA", part: 22, desc: "Renforcement US" });
     props.push({ ticker: "AASI.PA", part: 8, desc: "Asie émergente" });
     props.push({ ticker: "NVDA", part: 6, desc: "IA via leader (CTO requis)" });
@@ -2340,7 +2341,9 @@ async function renderPropositions() {
 
 // === Profil risque/rendement par ticker (volatilité annuelle, rendement moyen historique) ===
 const RISK_DATA = {
-  "AWLD.PA":  { vol: 15, rendement: 7,  pireBaisse: -25, label: "ETF World — diversifié" },
+  "WPEA.PA":  { vol: 15, rendement: 7,  pireBaisse: -25, label: "ETF World iShares — PEA, ~6 €/part" },
+  "EWLD.PA":  { vol: 15, rendement: 7,  pireBaisse: -25, label: "ETF World Amundi V — PEA" },
+  "CW8.PA":   { vol: 15, rendement: 7,  pireBaisse: -25, label: "ETF World Amundi — PEA (cher : 635 €/part)" },
   "500.PA":  { vol: 18, rendement: 9,  pireBaisse: -30, label: "ETF S&P 500 — concentré US" },
   "AASI.PA": { vol: 22, rendement: 6,  pireBaisse: -35, label: "ETF EM Asia — émergents" },
   "AEEM.PA": { vol: 22, rendement: 6,  pireBaisse: -35, label: "ETF Emerging Markets" },
@@ -2391,11 +2394,11 @@ async function renderPrevu() {
   }
   const phase = getPhase(total);
   const tickersByPhase = [
-    ["AWLD.PA"],
-    ["AWLD.PA"],
-    ["AWLD.PA","500.PA"],
-    ["AWLD.PA","500.PA","AASI.PA"],
-    ["AWLD.PA","500.PA","AASI.PA","NVDA","RKLB"],
+    ["WPEA.PA"],
+    ["WPEA.PA"],
+    ["WPEA.PA","500.PA"],
+    ["WPEA.PA","500.PA","AASI.PA"],
+    ["WPEA.PA","500.PA","AASI.PA","NVDA","RKLB"],
   ];
   const tickers = tickersByPhase[phase];
 
@@ -2538,8 +2541,8 @@ async function renderMoment() {
   el.innerHTML = `<div class="moment-card yellow"><span class="rappel-emoji">📊</span>
     <div class="moment-text"><strong>Conseil du moment</strong> <span class="loader"></span> Analyse en cours…</div></div>`;
   try {
-    const q = await getQuote("AWLD.PA");
-    const hist = await fetchYahooHistory("AWLD.PA", "6mo");
+    const q = await getQuote("WPEA.PA");
+    const hist = await fetchYahooHistory("WPEA.PA", "6mo");
     const closes = hist.map(d => d.close);
     if (closes.length < 30) {
       el.innerHTML = `<div class="moment-card yellow"><span class="rappel-emoji">📊</span>
@@ -2584,7 +2587,7 @@ async function renderMoment() {
 // ============================================================================
 // Profil de risque par ticker connu (1=très faible, 5=très élevé)
 const RISK_PROFILE = {
-  "AWLD.PA": 2,   // ETF World ultra-diversifié
+  "WPEA.PA": 2,   // ETF World ultra-diversifié
   "500.PA": 3,   // S&P 500 — concentré US mais 500 lignes
   "AASI.PA": 4,  // EM Asia — émergents, plus volatil
   "AEEM.PA": 4,
@@ -2619,7 +2622,7 @@ function riskPill(level) {
 }
 
 // Allocation cible utilisateur
-const ALLOC_CIBLE_ETF = { "AWLD.PA": 50, "500.PA": 30, "AASI.PA": 20 };
+const ALLOC_CIBLE_ETF = { "WPEA.PA": 50, "500.PA": 30, "AASI.PA": 20 };
 
 // Calcul moyenne mobile
 function ma(values, n) {
@@ -2664,7 +2667,7 @@ function conseilCard(action, titre, explication, risk=null) {
 // === Allocation cible PROFIL PRUDENT ===
 // Socle ETF 75-80%, IA via large cap 5-8%, spatial 1-2%, or 5-15%
 const ALLOC_RECO_PRUDENT = {
-  "AWLD.PA":  { cible: 50, role: "Socle mondial — 1 600 entreprises, le plus diversifié",       cat: "ETF" },
+  "WPEA.PA":  { cible: 50, role: "Socle mondial — 1 600 entreprises, le plus diversifié",       cat: "ETF" },
   "500.PA":  { cible: 22, role: "Renforcement US — moteur historique de la croissance",         cat: "ETF" },
   "AASI.PA": { cible: 8,  role: "Asie émergente — Inde/Chine/Corée, croissance long terme",    cat: "ETF" },
   "NVDA":    { cible: 6,  role: "Exposition IA via leader large cap (moat fort)",               cat: "Action" },
