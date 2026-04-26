@@ -424,7 +424,7 @@
       <div class="setting-row">
         <div>
           <div class="setting-label">Repo de données</div>
-          <div class="setting-sub" id="repoStatus">dume2309/invest · data/portfolio.json</div>
+          <div class="setting-sub" id="repoStatus">dume2309/invest-data · portfolio.json (privé)</div>
         </div>
       </div>
       <div class="setting-row">
@@ -589,7 +589,7 @@
     <h3>Token GitHub</h3>
     <p style="font-size:12px;color:var(--muted);line-height:1.5;">
       Crée un PAT fine-grained sur <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" style="color:var(--accent);">github.com</a>
-      avec le scope <strong>Contents: Read and Write</strong> sur le repo <strong>invest</strong>.
+      avec le scope <strong>Contents: Read and Write</strong> sur le repo <strong>invest-data</strong>. Sans expiration ou max 1 an.
     </p>
     <div class="form-row">
       <label>Token</label>
@@ -611,9 +611,10 @@
 const APP_VERSION = "v1.0";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
-const GH_REPO = "dume2309/invest";
-const GH_PATH = "data/portfolio.json";
-const GH_BACKUP_PATH = "data/portfolio-backup.txt";
+const GH_REPO = "dume2309/invest-data";
+const GH_PATH = "portfolio.json";
+const GH_BACKUP_PATH = "portfolio-backup.txt";
+const GH_BRANCH = "main"; // invest-data utilise main par défaut (créé via gh)
 const PUSH_DEBOUNCE_MS = 2500;
 
 // Proxies CORS pour Yahoo Finance (fallback en cascade)
@@ -1136,7 +1137,7 @@ function updateTokenStatus() {
 
 async function ghGetFile(path) {
   const tok = getToken(); if (!tok) return null;
-  const r = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${path}?ref=master`, {
+  const r = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${path}?ref=${GH_BRANCH}`, {
     headers: { Authorization: "Bearer " + tok, Accept: "application/vnd.github+json" }
   });
   if (r.status === 404) return { sha: null, content: null };
@@ -1148,7 +1149,7 @@ async function ghGetFile(path) {
 async function ghPutFile(path, contentStr, message, sha=null) {
   const tok = getToken(); if (!tok) throw new Error("Pas de token");
   const body = {
-    message, content: utf8ToBase64(contentStr), branch: "master",
+    message, content: utf8ToBase64(contentStr), branch: GH_BRANCH,
     ...(sha ? { sha } : {})
   };
   const r = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${path}`, {
