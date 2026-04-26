@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0e1014;
+    --bg-2: #161a22;
+    --bg-3: #1d222c;
+    --border: #262c38;
+    --text: #e6e8ec;
+    --muted: #8a94a6;
+    --accent: #d4af37; /* or */
+    --green: #26d07c;
+    --red: #ef4f4f;
+    --blue: #4f8cff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text);
+    font-size: 14px;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  button {
+    cursor: pointer; border: none; background: var(--bg-3); color: var(--text);
+    padding: 8px 14px; border-radius: 6px; font-size: 13px;
+    transition: background .15s;
+  }
+  button:hover { background: var(--border); }
+  button.primary { background: var(--accent); color: #000; font-weight: 600; }
+  button.primary:hover { background: #e6c14b; }
+  button.danger { background: transparent; color: var(--red); padding: 4px 8px; }
+  button.danger:hover { background: rgba(239,79,79,0.1); }
+  input, select {
+    background: var(--bg-2); color: var(--text); border: 1px solid var(--border);
+    padding: 8px 10px; border-radius: 6px; font-size: 13px;
+    width: 100%;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+  /* --- Layout --- */
+  header {
+    padding: 18px 28px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+    background: var(--bg-2);
+  }
+  header h1 {
+    margin: 0; font-size: 18px; font-weight: 600; letter-spacing: 0.5px;
+  }
+  header h1 span { color: var(--accent); }
+  .header-stats { display: flex; gap: 28px; align-items: center; flex-wrap: wrap; }
+  .stat { display: flex; flex-direction: column; }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value { font-size: 20px; font-weight: 600; margin-top: 2px; }
+  .stat-value.big { font-size: 26px; }
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+
+  main {
+    padding: 24px 28px; max-width: 1600px; margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+  }
+  @media (max-width: 1100px) {
+    main { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--bg-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px;
+  }
+  .card h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--muted); margin: 0 0 14px 0; font-weight: 600;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .card h2 .actions { display: flex; gap: 8px; }
+
+  /* --- Tableau --- */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left; font-weight: 500; color: var(--muted);
+    padding: 10px 8px; border-bottom: 1px solid var(--border);
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td {
+    padding: 12px 8px; border-bottom: 1px solid var(--border);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .ticker-cell { font-weight: 600; color: var(--accent); }
+  .type-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+    background: var(--bg-3); color: var(--muted);
+  }
+  .type-badge.ETF { background: rgba(79,140,255,0.15); color: var(--blue); }
+  .type-badge.Action { background: rgba(38,208,124,0.15); color: var(--green); }
+  .type-badge.Or { background: rgba(212,175,55,0.15); color: var(--accent); }
+
+  /* --- Charts --- */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+  @media (max-width: 800px) { .charts-row { grid-template-columns: 1fr; } }
+  .chart-wrap { height: 280px; position: relative; }
+
+  /* --- Sidebar --- */
+  aside { display: flex; flex-direction: column; gap: 20px; }
+  .alert-item, .watchlist-item {
+    padding: 12px; background: var(--bg-3); border-radius: 8px;
+    margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+    gap: 8px;
+  }
+  .alert-item.declenchee { border-left: 3px solid var(--red); }
+  .alert-info { flex: 1; }
+  .alert-info .ticker { font-weight: 600; color: var(--accent); }
+  .alert-seuils { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* --- Modal --- */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--bg-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px; width: 95%; max-width: 460px;
+  }
+  .modal h3 { margin: 0 0 16px 0; font-size: 16px; }
+  .form-row { margin-bottom: 12px; }
+  .form-row label {
+    display: block; font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+  /* --- Loader --- */
+  .loader {
+    display: inline-block; width: 12px; height: 12px;
+    border: 2px solid var(--muted); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty { text-align: center; color: var(--muted); padding: 24px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📈 Portfolio <span>Tracker</span></h1>
+  <div class="header-stats">
+    <div class="stat">
+      <div class="stat-label">Valeur totale</div>
+      <div class="stat-value big" id="totalValue">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">PV/MV €</div>
+      <div class="stat-value" id="totalPv">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">PV/MV %</div>
+      <div class="stat-value" id="totalPvPct">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Dernière MAJ</div>
+      <div class="stat-value" id="lastUpdate" style="font-size:13px;">—</div>
+    </div>
+    <button class="primary" onclick="refreshAll()">↻ Rafraîchir</button>
+  </div>
+</header>
+
+<main>
+  <div>
+    <!-- Positions -->
+    <div class="card">
+      <h2>
+        Positions
+        <div class="actions">
+          <button class="primary" onclick="openAddModal()">+ Ajouter</button>
+        </div>
+      </h2>
+      <div style="overflow-x:auto;">
+        <table id="positionsTable">
+          <thead>
+            <tr>
+              <th>Ticker</th>
+              <th>Nom</th>
+              <th>Type</th>
+              <th class="num">Qté</th>
+              <th class="num">Prix achat</th>
+              <th class="num">Cours</th>
+              <th class="num">Jour %</th>
+              <th class="num">Valeur €</th>
+              <th class="num">PV €</th>
+              <th class="num">PV %</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="positionsBody">
+            <tr><td colspan="11" class="empty">Aucune position. Clique sur « + Ajouter ».</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="card">
+        <h2>Répartition</h2>
+        <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>
+          Historique valeur
+          <div class="actions">
+            <select id="historyPeriod" onchange="loadHistory()" style="width:auto;padding:4px 8px;font-size:12px;">
+              <option value="1mo">1 mois</option>
+              <option value="3mo">3 mois</option>
+              <option value="6mo">6 mois</option>
+              <option value="1y" selected>1 an</option>
+            </select>
+          </div>
+        </h2>
+        <div class="chart-wrap"><canvas id="lineChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Watchlist -->
+    <div class="card" style="margin-top:20px;">
+      <h2>
+        Watchlist
+        <div class="actions">
+          <button onclick="openWatchlistModal()">+ Surveiller</button>
+        </div>
+      </h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticker</th>
+              <th>Nom</th>
+              <th>Secteur</th>
+              <th class="num">Cours</th>
+              <th class="num">Jour %</th>
+              <th>Note</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="watchlistBody">
+            <tr><td colspan="7" class="empty">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar : alertes -->
+  <aside>
+    <div class="card">
+      <h2>
+        Alertes
+        <div class="actions"><button onclick="openAlertModal()">+ Alerte</button></div>
+      </h2>
+      <div id="alertsBody">
+        <div class="empty">Aucune alerte.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Allocation cible</h2>
+      <div style="font-size:12px;line-height:1.8;color:var(--muted);">
+        <div><span style="color:var(--blue);">●</span> Amundi MSCI World <strong style="color:var(--text);float:right;">50%</strong></div>
+        <div><span style="color:var(--blue);">●</span> Amundi S&P 500 <strong style="color:var(--text);float:right;">30%</strong></div>
+        <div><span style="color:var(--blue);">●</span> Amundi MSCI EM Asia <strong style="color:var(--text);float:right;">20%</strong></div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+          <span style="color:var(--accent);">●</span> Or physique <strong style="color:var(--text);float:right;">hors PEA</strong>
+        </div>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<!-- Modal : ajout position -->
+<div class="modal-overlay" id="addModal" onclick="if(event.target===this)closeModal('addModal')">
+  <div class="modal">
+    <h3>Ajouter une position</h3>
+    <div class="form-row">
+      <label>Ticker (Yahoo Finance)</label>
+      <input id="f_ticker" placeholder="ex. CW8.PA, RKLB, GC=F">
+    </div>
+    <div class="form-row">
+      <label>Nom (optionnel)</label>
+      <input id="f_nom" placeholder="ex. Amundi MSCI World">
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Type</label>
+        <select id="f_type">
+          <option>ETF</option>
+          <option>Action</option>
+          <option>Or</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Devise</label>
+        <select id="f_devise">
+          <option>EUR</option>
+          <option>USD</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Quantité <span id="f_qte_hint" style="color:var(--muted);font-size:10px;"></span></label>
+        <input id="f_quantite" type="number" step="0.0001" placeholder="ex. 10">
+      </div>
+      <div class="form-row">
+        <label>Prix d'achat unitaire</label>
+        <input id="f_prix" type="number" step="0.01" placeholder="ex. 420.50">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Date d'achat</label>
+      <input id="f_date" type="date">
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeModal('addModal')">Annuler</button>
+      <button class="primary" onclick="addPosition()">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal : alerte -->
+<div class="modal-overlay" id="alertModal" onclick="if(event.target===this)closeModal('alertModal')">
+  <div class="modal">
+    <h3>Nouvelle alerte prix</h3>
+    <div class="form-row">
+      <label>Ticker</label>
+      <input id="a_ticker" placeholder="ex. RKLB">
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Seuil haut</label>
+        <input id="a_haut" type="number" step="0.01">
+      </div>
+      <div class="form-row">
+        <label>Seuil bas</label>
+        <input id="a_bas" type="number" step="0.01">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeModal('alertModal')">Annuler</button>
+      <button class="primary" onclick="addAlert()">Créer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal : watchlist -->
+<div class="modal-overlay" id="watchlistModal" onclick="if(event.target===this)closeModal('watchlistModal')">
+  <div class="modal">
+    <h3>Ajouter à la watchlist</h3>
+    <div class="form-row">
+      <label>Ticker</label>
+      <input id="w_ticker" placeholder="ex. NVDA">
+    </div>
+    <div class="form-row">
+      <label>Nom</label>
+      <input id="w_nom" placeholder="ex. Nvidia">
+    </div>
+    <div class="form-row">
+      <label>Secteur</label>
+      <input id="w_secteur" placeholder="ex. Infrastructure IA">
+    </div>
+    <div class="form-row">
+      <label>Note</label>
+      <input id="w_note" placeholder="optionnel">
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeModal('watchlistModal')">Annuler</button>
+      <button class="primary" onclick="addWatchlist()">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "";
+let donutChart = null, lineChart = null;
+let currentData = { positions: [], alertes: [], watchlist: [], totaux: {} };
+
+const fmt = {
+  eur: (n) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(n || 0),
+  num: (n, d=2) => new Intl.NumberFormat("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d }).format(n || 0),
+  pct: (n) => (n >= 0 ? "+" : "") + (n || 0).toFixed(2) + "%",
+};
+
+function clsPv(n) { return n > 0 ? "pos" : n < 0 ? "neg" : ""; }
+
+// ----------------------------------------------------------------------
+// Chargement portefeuille
+// ----------------------------------------------------------------------
+async function loadPortfolio() {
+  document.getElementById("lastUpdate").innerHTML = '<span class="loader"></span>';
+  try {
+    const res = await fetch(API + "/api/portfolio");
+    const data = await res.json();
+    currentData = data;
+    render(data);
+  } catch (e) {
+    console.error(e);
+    document.getElementById("lastUpdate").textContent = "Erreur";
+  }
+}
+
+function render(data) {
+  // Totaux header
+  document.getElementById("totalValue").textContent = fmt.eur(data.totaux.valeur_eur);
+  const pv = data.totaux.pv_eur;
+  const pvPct = data.totaux.pv_pct;
+  const pvEl = document.getElementById("totalPv");
+  pvEl.textContent = (pv >= 0 ? "+" : "") + fmt.eur(pv);
+  pvEl.className = "stat-value " + clsPv(pv);
+  const pctEl = document.getElementById("totalPvPct");
+  pctEl.textContent = fmt.pct(pvPct);
+  pctEl.className = "stat-value " + clsPv(pv);
+  document.getElementById("lastUpdate").textContent = new Date(data.ts).toLocaleTimeString("fr-FR");
+
+  // Tableau positions
+  const tb = document.getElementById("positionsBody");
+  if (!data.positions.length) {
+    tb.innerHTML = '<tr><td colspan="11" class="empty">Aucune position. Clique sur « + Ajouter ».</td></tr>';
+  } else {
+    tb.innerHTML = data.positions.map(p => {
+      if (p.error) {
+        return `<tr><td class="ticker-cell">${p.ticker}</td><td colspan="9" style="color:var(--red);">⚠ ${p.error}</td>
+          <td><button class="danger" onclick="delPosition('${p.id}')">×</button></td></tr>`;
+      }
+      const unite = p.type === "Or" ? " g" : "";
+      return `<tr>
+        <td class="ticker-cell">${p.ticker}</td>
+        <td>${p.nom || p.name || "—"}</td>
+        <td><span class="type-badge ${p.type}">${p.type}</span></td>
+        <td class="num">${fmt.num(p.quantite, p.type === "Or" ? 2 : 4)}${unite}</td>
+        <td class="num">${fmt.num(p.prix_achat, 2)} ${p.devise}</td>
+        <td class="num">${fmt.num(p.prix_actuel, 2)} ${p.devise_cotation}</td>
+        <td class="num ${clsPv(p.change_pct_jour)}">${fmt.pct(p.change_pct_jour)}</td>
+        <td class="num">${fmt.eur(p.valeur_eur)}</td>
+        <td class="num ${clsPv(p.pv_eur)}">${(p.pv_eur >= 0 ? "+" : "")}${fmt.eur(p.pv_eur)}</td>
+        <td class="num ${clsPv(p.pv_pct)}">${fmt.pct(p.pv_pct)}</td>
+        <td><button class="danger" onclick="delPosition('${p.id}')">×</button></td>
+      </tr>`;
+    }).join("");
+  }
+
+  // Alertes
+  renderAlerts(data.alertes);
+
+  // Donut
+  renderDonut(data.positions);
+}
+
+function renderAlerts(alertes) {
+  const el = document.getElementById("alertsBody");
+  if (!alertes.length) {
+    el.innerHTML = '<div class="empty">Aucune alerte.</div>';
+    return;
+  }
+  el.innerHTML = alertes.map(a => `
+    <div class="alert-item ${a.declenchee ? "declenchee" : ""}">
+      <div class="alert-info">
+        <div class="ticker">${a.ticker} ${a.declenchee ? "🔔" : ""}</div>
+        <div class="alert-seuils">
+          ${a.seuil_bas != null ? `bas ${fmt.num(a.seuil_bas)}` : ""}
+          ${a.seuil_bas != null && a.seuil_haut != null ? " · " : ""}
+          ${a.seuil_haut != null ? `haut ${fmt.num(a.seuil_haut)}` : ""}
+          ${a.prix_actuel ? ` · cours ${fmt.num(a.prix_actuel)}` : ""}
+        </div>
+      </div>
+      <button class="danger" onclick="delAlert('${a.id}')">×</button>
+    </div>
+  `).join("");
+}
+
+// ----------------------------------------------------------------------
+// Donut chart
+// ----------------------------------------------------------------------
+function renderDonut(positions) {
+  const valid = positions.filter(p => !p.error);
+  const labels = valid.map(p => p.ticker);
+  const values = valid.map(p => p.valeur_eur);
+  const colors = valid.map(p => {
+    if (p.type === "ETF") return "#4f8cff";
+    if (p.type === "Action") return "#26d07c";
+    if (p.type === "Or") return "#d4af37";
+    return "#8a94a6";
+  });
+
+  if (donutChart) donutChart.destroy();
+  donutChart = new Chart(document.getElementById("donutChart"), {
+    type: "doughnut",
+    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: "right", labels: { color: "#e6e8ec", font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.label}: ${fmt.eur(ctx.parsed)}`
+          }
+        }
+      }
+    }
+  });
+}
+
+// ----------------------------------------------------------------------
+// Line chart : on agrège l'historique des positions pondérées
+// ----------------------------------------------------------------------
+async function loadHistory() {
+  const period = document.getElementById("historyPeriod").value;
+  const positions = currentData.positions.filter(p => !p.error);
+  if (!positions.length) { renderLineChart([], []); return; }
+
+  // Récupère historique par ticker en // (limité au dernier ticker pour démo)
+  // Pour rester simple : on prend le 1er ETF principal pour la courbe
+  const main = positions[0];
+  try {
+    const res = await fetch(`${API}/api/history/${encodeURIComponent(main.ticker)}?period=${period}`);
+    const json = await res.json();
+    const labels = json.data.map(d => d.date);
+    const values = json.data.map(d => d.close * main.quantite);
+    renderLineChart(labels, values, main.ticker);
+  } catch (e) { console.error(e); }
+}
+
+function renderLineChart(labels, values, ticker = "") {
+  if (lineChart) lineChart.destroy();
+  lineChart = new Chart(document.getElementById("lineChart"), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: ticker || "Valeur",
+        data: values,
+        borderColor: "#d4af37",
+        backgroundColor: "rgba(212,175,55,0.08)",
+        tension: 0.3, fill: true, pointRadius: 0, borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: "#8a94a6", maxTicksLimit: 8 }, grid: { color: "#262c38" } },
+        y: { ticks: { color: "#8a94a6" }, grid: { color: "#262c38" } }
+      }
+    }
+  });
+}
+
+// ----------------------------------------------------------------------
+// Watchlist
+// ----------------------------------------------------------------------
+async function loadWatchlist() {
+  try {
+    const res = await fetch(API + "/api/watchlist");
+    const items = await res.json();
+    const tb = document.getElementById("watchlistBody");
+    if (!items.length) {
+      tb.innerHTML = '<tr><td colspan="7" class="empty">Watchlist vide.</td></tr>';
+      return;
+    }
+    tb.innerHTML = items.map(w => `
+      <tr>
+        <td class="ticker-cell">${w.ticker}</td>
+        <td>${w.nom || w.name || "—"}</td>
+        <td style="color:var(--muted);">${w.secteur || ""}</td>
+        <td class="num">${w.price ? fmt.num(w.price, 2) + " " + (w.currency || "") : "—"}</td>
+        <td class="num ${clsPv(w.change_pct)}">${w.change_pct != null ? fmt.pct(w.change_pct) : "—"}</td>
+        <td style="color:var(--muted);font-size:12px;">${w.note || ""}</td>
+        <td><button class="danger" onclick="delWatchlist('${w.id}')">×</button></td>
+      </tr>
+    `).join("");
+  } catch (e) { console.error(e); }
+}
+
+// ----------------------------------------------------------------------
+// Actions CRUD
+// ----------------------------------------------------------------------
+function openAddModal() {
+  document.getElementById("f_date").value = new Date().toISOString().slice(0, 10);
+  document.getElementById("addModal").classList.add("active");
+  updateQteHint();
+}
+function openAlertModal() { document.getElementById("alertModal").classList.add("active"); }
+function openWatchlistModal() { document.getElementById("watchlistModal").classList.add("active"); }
+function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("f_type").addEventListener("change", updateQteHint);
+});
+function updateQteHint() {
+  const t = document.getElementById("f_type").value;
+  document.getElementById("f_qte_hint").textContent = t === "Or" ? "(en grammes)" : "";
+}
+
+async function addPosition() {
+  const payload = {
+    ticker: document.getElementById("f_ticker").value.trim(),
+    nom: document.getElementById("f_nom").value.trim(),
+    type: document.getElementById("f_type").value,
+    devise: document.getElementById("f_devise").value,
+    quantite: parseFloat(document.getElementById("f_quantite").value),
+    prix_achat: parseFloat(document.getElementById("f_prix").value),
+    date_achat: document.getElementById("f_date").value,
+  };
+  if (!payload.ticker || !payload.quantite || !payload.prix_achat) {
+    alert("Ticker, quantité et prix sont requis");
+    return;
+  }
+  const res = await fetch(API + "/api/portfolio", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (res.ok) {
+    closeModal("addModal");
+    ["f_ticker","f_nom","f_quantite","f_prix"].forEach(id => document.getElementById(id).value = "");
+    refreshAll();
+  } else {
+    const e = await res.json();
+    alert("Erreur : " + (e.error || "inconnue"));
+  }
+}
+
+async function delPosition(id) {
+  if (!confirm("Supprimer cette position ?")) return;
+  await fetch(API + "/api/portfolio/" + id, { method: "DELETE" });
+  loadPortfolio();
+}
+
+async function addAlert() {
+  const payload = {
+    ticker: document.getElementById("a_ticker").value.trim(),
+    seuil_haut: document.getElementById("a_haut").value || null,
+    seuil_bas: document.getElementById("a_bas").value || null,
+  };
+  if (!payload.ticker) { alert("Ticker requis"); return; }
+  const res = await fetch(API + "/api/alerts", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (res.ok) {
+    closeModal("alertModal");
+    ["a_ticker","a_haut","a_bas"].forEach(id => document.getElementById(id).value = "");
+    loadPortfolio();
+  }
+}
+
+async function delAlert(id) {
+  await fetch(API + "/api/alerts/" + id, { method: "DELETE" });
+  loadPortfolio();
+}
+
+async function addWatchlist() {
+  const payload = {
+    ticker: document.getElementById("w_ticker").value.trim(),
+    nom: document.getElementById("w_nom").value.trim(),
+    secteur: document.getElementById("w_secteur").value.trim(),
+    note: document.getElementById("w_note").value.trim(),
+  };
+  if (!payload.ticker) { alert("Ticker requis"); return; }
+  const res = await fetch(API + "/api/watchlist", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (res.ok) {
+    closeModal("watchlistModal");
+    ["w_ticker","w_nom","w_secteur","w_note"].forEach(id => document.getElementById(id).value = "");
+    loadWatchlist();
+  }
+}
+
+async function delWatchlist(id) {
+  if (!confirm("Retirer de la watchlist ?")) return;
+  await fetch(API + "/api/watchlist/" + id, { method: "DELETE" });
+  loadWatchlist();
+}
+
+// ----------------------------------------------------------------------
+// Refresh global + auto-refresh
+// ----------------------------------------------------------------------
+async function refreshAll() {
+  document.getElementById("lastUpdate").innerHTML = '<span class="loader"></span>';
+  await fetch(API + "/api/refresh");
+  await loadPortfolio();
+  await loadWatchlist();
+  await loadHistory();
+}
+
+// Auto refresh toutes les 60s
+setInterval(loadPortfolio, 60_000);
+setInterval(loadWatchlist, 60_000);
+
+// Boot
+loadPortfolio().then(loadHistory);
+loadWatchlist();
+</script>
+
+</body>
+</html>
