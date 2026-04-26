@@ -1355,12 +1355,52 @@ async function renderAlerts() {
     </div>`).join("");
 }
 
+// Vérifie EDGAR pour un dépôt S-1 SpaceX (cache 6h, notifie 1 fois)
+async function checkSpacexS1() {
+  const CACHE_KEY = "spacexS1Cache";
+  const NOTIF_KEY = "spacexS1Notified";
+  const TTL = 6 * 60 * 60 * 1000;
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+    if (c && Date.now() - c.ts < TTL) return c.data;
+  } catch {}
+  try {
+    const url = "https://efts.sec.gov/LATEST/search-index?q=%22Space+Exploration+Technologies%22&forms=S-1";
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("EDGAR " + res.status);
+    const j = await res.json();
+    const hits = j?.hits?.hits || [];
+    const filings = hits.map(h => ({
+      form: h._source?.form,
+      date: h._source?.file_date,
+      cik: (h._source?.ciks || [])[0],
+      accession: h._source?.adsh,
+      display: (h._source?.display_names || []).join(", "),
+    })).filter(f => /space\s*exploration/i.test(f.display));
+    filings.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    const data = { found: filings.length > 0, filings, checkedAt: Date.now() };
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+    if (data.found && !localStorage.getItem(NOTIF_KEY)) {
+      localStorage.setItem(NOTIF_KEY, "1");
+      const f = filings[0];
+      toast(`🔔 SpaceX S-1 publié sur EDGAR (${f.date}) !`, "success");
+    }
+    return data;
+  } catch (e) {
+    return { found: false, error: e.message };
+  }
+}
+
 async function renderWatchlist() {
   const el = $("watchlistList");
   if (!D.watchlist.length) {
     el.innerHTML = '<div class="empty">Watchlist vide.</div>'; return;
   }
   const items = await Promise.all(D.watchlist.map(async (w) => {
+    if (w.preIPO) {
+      const s1 = w.ticker === "SPACEX" ? await checkSpacexS1() : null;
+      return { ...w, score: 0, label: "🚀 Pré-IPO", color: "var(--accent)", s1 };
+    }
     try {
       const q = await getQuote(w.ticker);
       const hist = await fetchYahooHistory(w.ticker, "1y");
@@ -1391,6 +1431,50 @@ async function renderWatchlist() {
   // Tri par score décroissant
   items.sort((a, b) => (b.score || 0) - (a.score || 0));
   el.innerHTML = items.map(w => {
+    if (w.preIPO) {
+      const est = w.priceEstimate || {};
+      const s1 = w.s1;
+      let s1Block = "";
+      if (s1?.found && s1.filings?.length) {
+        const f = s1.filings[0];
+        const cikPad = String(f.cik || "").padStart(10, "0");
+        const url = f.cik
+          ? `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${cikPad}&type=S-1&dateb=&owner=include&count=40`
+          : `https://efts.sec.gov/LATEST/search-index?q=%22Space+Exploration+Technologies%22&forms=S-1`;
+        s1Block = `<div style="margin-top:6px;padding:8px 10px;background:rgba(46,160,67,0.15);border:1px solid var(--green);border-radius:6px;font-size:11px;line-height:1.5;">
+          <div style="color:var(--green);font-weight:700;font-size:12px;margin-bottom:2px;">🔔 S-1 publié sur EDGAR — ${f.date}</div>
+          <div>Formulaire ${f.form} · ${f.display}</div>
+          <a href="${url}" target="_blank" rel="noopener" style="color:var(--accent);">→ Voir le dépôt SEC</a>
+        </div>`;
+      } else if (s1?.error) {
+        s1Block = `<div style="margin-top:6px;padding:6px 8px;background:var(--bg-4);border-radius:6px;font-size:10px;color:var(--muted);">⚠ Check EDGAR indisponible (${s1.error}). Réessai au prochain refresh.</div>`;
+      } else if (s1) {
+        s1Block = `<div style="margin-top:6px;padding:6px 8px;background:var(--bg-4);border-radius:6px;font-size:10px;color:var(--muted);">🔍 EDGAR : pas encore de S-1 public. Auto-check toutes les 6h.</div>`;
+      }
+      return `<div class="pos-item">
+        <div class="pos-row">
+          <div>
+            <span class="pos-ticker">${w.ticker}</span>
+            <span class="pos-name">${w.nom || ""}</span>
+          </div>
+          <div style="text-align:right;">
+            <div class="pos-value" style="color:${s1?.found ? "var(--green)" : "var(--accent)"};">${s1?.found ? "S-1 publié" : "Pré-IPO"}</div>
+            <div class="pos-pv" style="font-size:11px;color:var(--muted);">cible ${w.ipoDate || "—"}</div>
+          </div>
+        </div>
+        ${s1Block}
+        ${est.low ? `<div style="margin-top:6px;padding:6px 8px;background:var(--bg-4);border-radius:6px;font-size:11px;line-height:1.5;">
+          <div style="color:var(--accent);font-weight:700;font-size:12px;margin-bottom:2px;">🚀 Estimation prix d'introduction</div>
+          <div><strong>${est.low}–${est.high} ${est.currency}</strong> · juste valeur ~${est.fairValue} ${est.currency}</div>
+          <div style="color:var(--muted);">${est.basis || ""}</div>
+        </div>` : ""}
+        <div class="pos-meta">
+          <span>${w.secteur || ""}</span>
+          <span style="flex:1;">${w.note || ""}</span>
+          <button class="danger" onclick="delWatchlist('${w.id}')" style="padding:0;">×</button>
+        </div>
+      </div>`;
+    }
     if (w.err) return `<div class="pos-item"><div class="pos-row"><span class="pos-ticker">${w.ticker}</span><span style="color:var(--red);">⚠ ${w.err}</span></div></div>`;
     const r = riskOf(w.ticker, "Action");
     return `<div class="pos-item">
@@ -2046,11 +2130,11 @@ async function ghPushNow() {
     if (remoteData) {
       const remoteCount = (remoteData.positions?.length || 0)
                         + (remoteData.alertes?.length || 0)
-                        + (remoteData.watchlist?.filter(w => !["RKLB","NVDA","PLTR","SMCI","ANET"].includes(w.ticker))?.length || 0) // ignorer la watchlist par défaut
+                        + (remoteData.watchlist?.filter(w => !["RKLB","NVDA","PLTR","SMCI","ANET","SPACEX"].includes(w.ticker))?.length || 0) // ignorer la watchlist par défaut
                         + (remoteData.analyses?.length || 0);
       const localCount = (D.positions?.length || 0)
                        + (D.alertes?.length || 0)
-                       + (D.watchlist?.filter(w => !["RKLB","NVDA","PLTR","SMCI","ANET"].includes(w.ticker))?.length || 0)
+                       + (D.watchlist?.filter(w => !["RKLB","NVDA","PLTR","SMCI","ANET","SPACEX"].includes(w.ticker))?.length || 0)
                        + (D.analyses?.length || 0);
       if (remoteData.positions?.length > 0 && (D.positions?.length || 0) === 0) {
         $("syncDot").className = "sync-dot err";
@@ -3418,16 +3502,28 @@ function analyseWatchlist(w, q, sig) {
 // INIT
 // ============================================================================
 function bootstrapWatchlist() {
-  if (D.watchlist.length) return;
   const defaults = [
     { ticker: "RKLB", nom: "Rocket Lab", secteur: "Spatial", note: "Surveiller point entrée" },
     { ticker: "NVDA", nom: "Nvidia", secteur: "Infrastructure IA", note: "Incontournable" },
     { ticker: "PLTR", nom: "Palantir", secteur: "IA défense", note: "Fort potentiel" },
     { ticker: "SMCI", nom: "Super Micro", secteur: "Serveurs IA", note: "Volatil" },
     { ticker: "ANET", nom: "Arista Networks", secteur: "Réseau IA", note: "Solide" },
+    { ticker: "SPACEX", nom: "SpaceX (post-xAI)", secteur: "Spatial + IA", note: "S-1 confidentiel déposé 1er avril 2026. Public attendu mai 2026, roadshow semaine du 8 juin, listing Nasdaq juin 2026 (ticker non confirmé). Levée jusqu'à 75 Md$. Stratégie : attendre fin du lock-up (~déc. 2026) ou correction post-hype.", preIPO: true, ipoDate: "2026-06", priceEstimate: { low: 400, high: 1200, fairValue: 525, currency: "USD", basis: "Valo cible ~1,75 T$ (post-fusion xAI fév. 2026). Benchmark consensus ~525 $/action ; fourchette élargie 400-1200 selon scénario hype" } },
   ];
-  D.watchlist = defaults.map(d => ({ id: uuid(), ...d }));
-  saveLocal(false);
+  if (!D.watchlist.length) {
+    D.watchlist = defaults.map(d => ({ id: uuid(), ...d }));
+    saveLocal(false);
+    return;
+  }
+  // Ajouter les nouveaux defaults manquants (utilisateurs existants)
+  let added = false;
+  for (const d of defaults) {
+    if (!D.watchlist.some(w => w.ticker === d.ticker)) {
+      D.watchlist.push({ id: uuid(), ...d });
+      added = true;
+    }
+  }
+  if (added) saveLocal(false);
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
