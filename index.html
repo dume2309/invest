@@ -1011,7 +1011,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v4.4";
+const APP_VERSION = "v4.5";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -3546,10 +3546,17 @@ window.addEventListener("DOMContentLoaded", async () => {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(e => console.warn("SW", e));
   }
-  // Auto-refresh toutes les 5 min en foreground
-  setInterval(() => { if (!document.hidden) refreshAll(); }, 5 * 60_000);
-  // Auto-pull toutes les 5 min en background pour récupérer les modifs des autres appareils
-  setInterval(() => { if (!document.hidden && getToken()) ghPullNow(); }, 5 * 60_000);
+  // Auto-refresh des cours toutes les 60 sec en foreground
+  setInterval(() => { if (!document.hidden) refreshAll(); }, 60_000);
+  // Auto-pull GitHub toutes les 2 min pour récupérer les modifs des autres appareils
+  setInterval(() => { if (!document.hidden && getToken()) ghPullNow(); }, 2 * 60_000);
+  // Refresh immédiat quand l'onglet redevient visible (revenu sur l'app)
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      refreshAll();
+      if (getToken()) ghPullNow();
+    }
+  });
 });
 
 function showBootOverlay(msg) {
