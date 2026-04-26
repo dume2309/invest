@@ -358,10 +358,13 @@
     <div class="card">
       <h2>
         Positions
-        <button class="primary" onclick="openAddModal()" style="padding:6px 12px;font-size:12px;min-height:30px;">+ Ajouter</button>
+        <span style="display:flex;gap:6px;">
+          <button class="primary" onclick="openExpressModal()" style="padding:6px 12px;font-size:12px;min-height:30px;">💰 J'ai acheté</button>
+          <button onclick="openAddModal()" style="padding:6px 10px;font-size:11px;min-height:30px;" title="Saisie détaillée">+</button>
+        </span>
       </h2>
       <div id="positionsList">
-        <div class="empty">Aucune position. Clique sur « + Ajouter ».</div>
+        <div class="empty">Aucune position. Clique sur « 💰 J'ai acheté ».</div>
       </div>
     </div>
   </section>
@@ -568,6 +571,50 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="expressModal" onclick="if(event.target===this)closeModal('expressModal')">
+  <div class="modal">
+    <h3>💰 J'ai acheté</h3>
+    <p style="font-size:12px;color:var(--muted);line-height:1.5;margin:0 0 14px 0;">
+      Saisie rapide : indique juste <strong>quel ETF/action</strong> et <strong>combien d'euros tu as mis</strong>.
+      L'appli récupère le cours du jour, calcule la quantité et fusionne avec ta position existante.
+    </p>
+    <div class="form-row">
+      <label>Quoi as-tu acheté ?</label>
+      <select id="x_ticker">
+        <option value="CW8.PA">CW8.PA — Amundi MSCI World (recommandé démarrage)</option>
+        <option value="500.PA">500.PA — Amundi S&P 500</option>
+        <option value="AASI.PA">AASI.PA — Amundi MSCI EM Asia</option>
+        <option value="NVDA">NVDA — Nvidia (USD)</option>
+        <option value="RKLB">RKLB — Rocket Lab (USD)</option>
+        <option value="GC=F">Or physique (en grammes)</option>
+        <option value="__other__">Autre ticker…</option>
+      </select>
+    </div>
+    <div class="form-row" id="x_otherRow" style="display:none;">
+      <label>Ticker Yahoo Finance</label>
+      <input id="x_otherTicker" placeholder="ex. ANET, EWQ.PA…" autocapitalize="characters">
+    </div>
+    <div class="form-row">
+      <label id="x_montantLabel">Montant investi (€)</label>
+      <input id="x_montant" type="number" inputmode="decimal" step="0.01" placeholder="ex. 200">
+    </div>
+    <div class="form-row" id="x_orRow" style="display:none;">
+      <label>Quantité d'or (en grammes)</label>
+      <input id="x_orQte" type="number" inputmode="decimal" step="0.01" placeholder="ex. 50">
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Pour l'or, indique la <strong>quantité en grammes</strong> + le <strong>prix payé en € au gramme</strong> ci-dessus.</div>
+    </div>
+    <div class="form-row">
+      <label>Date d'achat</label>
+      <input id="x_date" type="date">
+    </div>
+    <div id="x_preview" style="background:var(--bg-3);padding:10px 12px;border-radius:8px;font-size:12px;color:var(--muted);margin-bottom:10px;display:none;"></div>
+    <div class="modal-actions">
+      <button onclick="closeModal('expressModal')">Annuler</button>
+      <button class="primary" id="x_save" onclick="saveExpressPosition()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="alertModal" onclick="if(event.target===this)closeModal('alertModal')">
   <div class="modal">
     <h3>Nouvelle alerte prix</h3>
@@ -642,7 +689,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v1.1";
+const APP_VERSION = "v1.2";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1036,6 +1083,123 @@ function setPeriod(p) {
 // ============================================================================
 // CRUD
 // ============================================================================
+// === ACHAT EXPRESS ===
+function openExpressModal() {
+  $("x_montant").value = "";
+  $("x_orQte").value = "";
+  $("x_otherTicker").value = "";
+  $("x_date").value = new Date().toISOString().slice(0, 10);
+  $("x_ticker").value = "CW8.PA";
+  $("x_preview").style.display = "none";
+  toggleExpressFields();
+  $("expressModal").classList.add("active");
+  // Listeners pour preview live
+  ["x_ticker","x_montant","x_orQte","x_date","x_otherTicker"].forEach(id => {
+    const el = $(id); if (el && !el._previewBound) { el.addEventListener("input", expressPreview); el._previewBound = true; }
+  });
+}
+
+function toggleExpressFields() {
+  const t = $("x_ticker").value;
+  $("x_otherRow").style.display = t === "__other__" ? "" : "none";
+  $("x_orRow").style.display = t === "GC=F" ? "" : "none";
+  $("x_montantLabel").textContent = t === "GC=F" ? "Prix payé total (€)" : "Montant investi (€)";
+}
+
+async function expressPreview() {
+  toggleExpressFields();
+  const tk = $("x_ticker").value === "__other__" ? $("x_otherTicker").value.trim().toUpperCase() : $("x_ticker").value;
+  const montant = parseFloat($("x_montant").value);
+  const orQte = parseFloat($("x_orQte").value);
+  const prev = $("x_preview");
+  if (!tk || !montant || montant <= 0) { prev.style.display = "none"; return; }
+  prev.style.display = "block";
+  prev.innerHTML = `<span class="loader"></span> Récupération du cours…`;
+  try {
+    const q = await getQuote(tk);
+    if (tk === "GC=F") {
+      if (!orQte || orQte <= 0) {
+        prev.innerHTML = `Indique aussi la <strong>quantité en grammes</strong> ci-dessous pour le calcul.`;
+        return;
+      }
+      const prixGramme = montant / orQte;
+      prev.innerHTML = `<strong style="color:var(--accent);">${orQte} g d'or</strong> à <strong>${fmt.num(prixGramme,2)} €/g</strong> · cours actuel ${fmt.num(q.price/31.1035*0.93,2)} €/g (indicatif)`;
+    } else {
+      const qte = montant / q.price;
+      const devise = q.currency;
+      prev.innerHTML = `Cours ${tk} : <strong>${fmt.num(q.price,2)} ${devise}</strong> · tu obtiendrais <strong style="color:var(--accent);">${fmt.num(qte, 4)} parts</strong> pour ${fmt.eur(montant)}`;
+    }
+  } catch (e) {
+    prev.innerHTML = `<span style="color:var(--red);">Cours indispo : ${e.message}</span>`;
+  }
+}
+
+async function saveExpressPosition() {
+  const tk = $("x_ticker").value === "__other__" ? $("x_otherTicker").value.trim().toUpperCase() : $("x_ticker").value;
+  const montant = parseFloat($("x_montant").value);
+  const orQte = parseFloat($("x_orQte").value);
+  const date = $("x_date").value || new Date().toISOString().slice(0,10);
+  if (!tk) { toast("Choisis un ticker", "error"); return; }
+  if (!montant || montant <= 0) { toast("Indique le montant investi", "error"); return; }
+  if (tk === "GC=F" && (!orQte || orQte <= 0)) { toast("Indique la quantité en grammes", "error"); return; }
+
+  $("x_save").innerHTML = '<span class="loader"></span>';
+  try {
+    const q = await getQuote(tk);
+    let qte, prixUnit, type, devise, nom;
+    if (tk === "GC=F") {
+      qte = orQte;
+      prixUnit = montant / orQte; // €/g (utilisateur saisit en €)
+      type = "Or"; devise = "EUR"; nom = "Or physique";
+    } else {
+      qte = montant / q.price;
+      prixUnit = q.price;
+      devise = q.currency;
+      // Type auto
+      const isAction = !tk.includes(".") || tk.endsWith(".US");
+      type = isAction && tk !== "GC=F" ? "Action" : "ETF";
+      // Heuristique : ETF Amundi reconnus
+      if (["CW8.PA","500.PA","AASI.PA","AEEM.PA"].includes(tk)) type = "ETF";
+      if (["NVDA","RKLB","PLTR","SMCI","ANET","TSLA","AAPL","MSFT","GOOGL","AMZN","META"].includes(tk)) type = "Action";
+      nom = q.name || tk;
+    }
+
+    // Fusion avec position existante (PRU pondéré)
+    const existing = D.positions.find(p => p.ticker === tk);
+    if (existing) {
+      const oldQte = existing.quantite;
+      const oldPru = existing.prix_achat;
+      const newQte = oldQte + qte;
+      const newPru = (oldQte * oldPru + qte * prixUnit) / newQte;
+      existing.quantite = newQte;
+      existing.prix_achat = newPru;
+      existing.date_achat = date; // dernier achat
+    } else {
+      D.positions.push({
+        id: uuid(), ticker: tk, nom, type, devise,
+        quantite: qte, prix_achat: prixUnit, date_achat: date,
+      });
+    }
+
+    // Historique des transactions
+    if (!D.transactions) D.transactions = [];
+    D.transactions.push({
+      id: uuid(), ticker: tk, date,
+      montant_eur: type === "Or" ? montant : (devise === "EUR" ? montant : null),
+      quantite: qte, prix_unitaire: prixUnit, devise,
+    });
+
+    saveLocal();
+    closeModal("expressModal");
+    refreshAll();
+    toast(existing ? `${tk} renforcé (${fmt.num(qte,4)} parts ajoutées)` : `${tk} ajouté au portefeuille`, "success");
+  } catch (e) {
+    toast("Erreur : " + e.message, "error");
+  } finally {
+    $("x_save").innerHTML = "Enregistrer";
+  }
+}
+
 function openAddModal(id=null) {
   editingId = id;
   if (id) {
