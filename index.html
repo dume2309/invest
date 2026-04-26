@@ -211,6 +211,38 @@
 
   .hidden { display: none !important; }
 
+  /* --- Rappel & moment --- */
+  .rappel-card {
+    padding: 12px 14px; border-radius: 12px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 12px;
+    border: 1.5px solid;
+  }
+  .rappel-card.warn {
+    background: rgba(212,175,55,0.08); border-color: var(--accent);
+  }
+  .rappel-card.info {
+    background: var(--bg-2); border-color: var(--border);
+  }
+  .rappel-emoji { font-size: 22px; }
+  .rappel-text { flex: 1; font-size: 13px; }
+  .rappel-text strong { color: var(--text); }
+  .moment-card {
+    padding: 12px 14px; border-radius: 12px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 12px;
+    border-left: 4px solid;
+  }
+  .moment-card.green {
+    background: rgba(38,208,124,0.08); border-color: var(--green); color: var(--green);
+  }
+  .moment-card.yellow {
+    background: rgba(212,175,55,0.08); border-color: var(--accent); color: var(--accent);
+  }
+  .moment-card.red {
+    background: rgba(239,79,79,0.08); border-color: var(--red); color: var(--red);
+  }
+  .moment-card .moment-text { color: var(--text); font-size: 13px; flex: 1; }
+  .moment-card .moment-text strong { font-size: 14px; }
+
   /* --- Conseils --- */
   .conseil {
     padding: 12px 14px; border-radius: 10px; margin-bottom: 8px;
@@ -321,6 +353,8 @@
 
   <!-- PORTFOLIO -->
   <section id="tab-portfolio">
+    <div id="rappelZone"></div>
+    <div id="momentZone"></div>
     <div class="card">
       <h2>
         Positions
@@ -608,7 +642,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v1.0";
+const APP_VERSION = "v1.1";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -802,6 +836,8 @@ async function refreshAll() {
     await renderAlerts();
     await renderWatchlist();
     await loadHistory();
+    renderRappel();
+    renderMoment();  // async, fire and forget
     $("syncTime").textContent = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
     dot.className = "sync-dot ok";
   } catch (e) {
@@ -1289,6 +1325,87 @@ async function forceUpdate() {
   }
   toast("Cache vidé, rechargement…");
   setTimeout(() => location.reload(), 800);
+}
+
+// ============================================================================
+// RAPPEL D'ACHAT MENSUEL & CONSEIL DU MOMENT
+// ============================================================================
+function renderRappel() {
+  const el = $("rappelZone"); if (!el) return;
+  if (!D.positions.length) {
+    el.innerHTML = `<div class="rappel-card info">
+      <span class="rappel-emoji">🌱</span>
+      <div class="rappel-text"><strong>Tu n'as encore rien acheté.</strong><br>
+        Va dans l'onglet 💡 Conseils pour voir le plan de démarrage personnalisé.</div>
+    </div>`;
+    return;
+  }
+  // Date d'achat la plus récente
+  const dates = D.positions.map(p => p.date_achat).filter(Boolean).sort();
+  const lastDate = dates[dates.length - 1];
+  if (!lastDate) { el.innerHTML = ""; return; }
+  const lastTs = new Date(lastDate).getTime();
+  const days = Math.floor((Date.now() - lastTs) / (1000 * 60 * 60 * 24));
+  if (days >= 30) {
+    el.innerHTML = `<div class="rappel-card warn">
+      <span class="rappel-emoji">🔔</span>
+      <div class="rappel-text"><strong>Pas d'achat depuis ${days} jours.</strong><br>
+        Rien d'obligatoire — juste un rappel discret. Si ton budget du mois le permet, c'est peut-être le moment.</div>
+    </div>`;
+  } else {
+    el.innerHTML = `<div class="rappel-card info">
+      <span class="rappel-emoji">✅</span>
+      <div class="rappel-text"><strong>Dernier achat : il y a ${days} jour${days > 1 ? "s" : ""}.</strong><br>
+        Tu es à jour de ton DCA mensuel.</div>
+    </div>`;
+  }
+}
+
+async function renderMoment() {
+  const el = $("momentZone"); if (!el) return;
+  // On analyse CW8.PA comme baromètre marché global
+  el.innerHTML = `<div class="moment-card yellow"><span class="rappel-emoji">📊</span>
+    <div class="moment-text"><strong>Conseil du moment</strong> <span class="loader"></span> Analyse en cours…</div></div>`;
+  try {
+    const q = await getQuote("CW8.PA");
+    const hist = await fetchYahooHistory("CW8.PA", "6mo");
+    const closes = hist.map(d => d.close);
+    if (closes.length < 30) {
+      el.innerHTML = `<div class="moment-card yellow"><span class="rappel-emoji">📊</span>
+        <div class="moment-text"><strong>Conseil du moment indisponible</strong><br>
+        Données historique insuffisantes.</div></div>`;
+      return;
+    }
+    const var1m = closes.length > 21 ? (q.price / closes[closes.length - 22] - 1) * 100 : 0;
+    const var3m = closes.length > 63 ? (q.price / closes[closes.length - 64] - 1) * 100 : 0;
+    const m50 = ma(closes, 50);
+    const m200 = ma(closes, 200);
+    const gap50 = m50 ? (q.price - m50) / m50 * 100 : 0;
+
+    let color, emoji, titre, conseil;
+
+    if (var1m < -5 || gap50 < -4) {
+      color = "green"; emoji = "🟢";
+      titre = `BON MOMENT POUR ACHETER`;
+      conseil = `Marché mondial en repli ${var1m < 0 ? `(${var1m.toFixed(1)}% sur 1 mois)` : ""}${gap50 < 0 ? ` — cours ${gap50.toFixed(1)}% sous la moyenne 50 jours` : ""}. <strong>Si tu as du budget ce mois, c'est une fenêtre intéressante</strong>. Mets ton montant haut (300-500 €).`;
+    } else if (var1m > 7 || gap50 > 5) {
+      color = "red"; emoji = "🔴";
+      titre = `MARCHÉ TENDU — patience`;
+      conseil = `Marché mondial en forte hausse (+${var1m.toFixed(1)}% sur 1 mois${gap50 > 0 ? `, +${gap50.toFixed(1)}% au-dessus de la moyenne` : ""}). <strong>Pas idéal pour acheter à plein</strong>. Si tu y vas quand même : montant réduit (100-200 €) ou attends 1-2 semaines un repli.`;
+    } else {
+      color = "yellow"; emoji = "🟡";
+      titre = `MARCHÉ CALME — achète si tu veux`;
+      conseil = `Marché mondial stable (${var1m >= 0 ? "+" : ""}${var1m.toFixed(1)}% sur 1 mois). <strong>Pas de signal fort</strong> — montant moyen (200-300 €) si tu veux acheter ce mois.`;
+    }
+    el.innerHTML = `<div class="moment-card ${color}">
+      <span class="rappel-emoji">${emoji}</span>
+      <div class="moment-text"><strong>${titre}</strong><br>${conseil}</div>
+    </div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="moment-card yellow"><span class="rappel-emoji">📊</span>
+      <div class="moment-text"><strong>Conseil du moment indisponible</strong><br>
+      Cours non récupéré : ${e.message}</div></div>`;
+  }
 }
 
 // ============================================================================
