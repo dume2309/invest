@@ -445,7 +445,6 @@
     <div id="rappelZone"></div>
     <div id="momentZone"></div>
     <div id="propositionsZone"></div>
-    <div id="prevuZone"></div>
     <div class="card">
       <h2>
         Positions
@@ -881,7 +880,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v1.7";
+const APP_VERSION = "v1.8";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1078,7 +1077,6 @@ async function refreshAll() {
     renderRappel();
     renderMoment();  // async, fire and forget
     renderPropositions();
-    renderPrevu();
     $("syncTime").textContent = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
     dot.className = "sync-dot ok";
   } catch (e) {
@@ -2013,32 +2011,39 @@ function renderNiveau() {
 // PROPOSITIONS D'ACHAT AUTO (basées sur phase, sans montant fixe)
 // ============================================================================
 
-function getPhase(totalEur) {
-  if (totalEur < 100) return 0;       // démarrage
-  if (totalEur < 1500) return 1;      // 100% CW8
-  if (totalEur < 5000) return 2;      // 70% CW8 + 30% 500.PA
-  if (totalEur < 10000) return 3;     // 60% CW8 + 25% 500.PA + 15% AASI
-  return 4;                           // + NVDA 5% + RKLB 2% + Or 12%
+function getPhase(totalEtfEur) {
+  // Phase basée UNIQUEMENT sur le total des ETF (CW8/500/AASI), pas sur or ni actions
+  if (totalEtfEur < 100) return 0;       // démarrage
+  if (totalEtfEur < 1500) return 1;      // 100% CW8
+  if (totalEtfEur < 5000) return 2;      // 70% CW8 + 30% 500.PA
+  if (totalEtfEur < 10000) return 3;     // 60% CW8 + 25% 500.PA + 15% AASI
+  return 4;                              // + NVDA 5% + RKLB 2% (or hors phase)
 }
 
 async function renderPropositions() {
   const el = $("propositionsZone"); if (!el) return;
 
-  // Calcul total portefeuille
-  let total = 0;
+  // Calcul total ETF (CW8/500.PA/AASI/AEEM uniquement, pas or ni actions)
+  const ETF_TICKERS = ["CW8.PA","500.PA","AASI.PA","AEEM.PA"];
+  let totalEtf = 0, totalAll = 0, totalOr = 0;
   for (const p of D.positions) {
     try {
       const q = await getQuote(p.ticker);
+      let valEur = 0;
       if (p.type === "Or" && p.ticker === "GC=F") {
         const eurusd = await getEurUsd();
-        total += (q.price / 31.1035 / eurusd) * p.quantite;
+        valEur = (q.price / 31.1035 / eurusd) * p.quantite;
+        totalOr += valEur;
       } else if (q.currency === "USD") {
         const eurusd = await getEurUsd();
-        total += (q.price * p.quantite) / eurusd;
-      } else { total += q.price * p.quantite; }
+        valEur = (q.price * p.quantite) / eurusd;
+      } else { valEur = q.price * p.quantite; }
+      totalAll += valEur;
+      if (ETF_TICKERS.includes(p.ticker)) totalEtf += valEur;
     } catch {}
   }
-  const phase = getPhase(total);
+  const phase = getPhase(totalEtf);
+  const total = totalAll;
 
   // Construction des propositions selon la phase (% uniquement, pas de €)
   const props = [];
@@ -2062,14 +2067,28 @@ async function renderPropositions() {
     props.push({ ticker: "GC=F", part: 12, desc: "Or physique chez Godot" });
   }
 
-  const phaseLabels = ["Démarrage", "Phase 1 — 100% CW8", "Phase 2 — CW8 + S&P 500", "Phase 3 — + Asie", "Phase 4 — diversification complète"];
+  const phaseLabels = ["Démarrage", "Phase 1", "Phase 2", "Phase 3", "Phase 4"];
   const phaseLabel = phaseLabels[phase];
 
+  // Message principal selon phase + contexte (or déjà détenu ?)
+  let entete;
+  if (phase === 0) {
+    entete = totalOr > 0
+      ? `Tu as déjà <strong>${fmt.eur(totalOr)}</strong> en or — bonne couverture. <strong>Maintenant : démarre tes ETF.</strong>`
+      : `<strong>Premier achat ETF.</strong> Mets ce que tu peux (50, 100, 200 €).`;
+  } else if (phase === 1) {
+    entete = `<strong>Continue 100% sur CW8.PA</strong> jusqu'à 1 500 € investis en ETF. Tu en es à <strong>${fmt.eur(totalEtf)}</strong>.`;
+  } else if (phase === 2) {
+    entete = `<strong>Phase 2 — diversification US.</strong> Tu as ${fmt.eur(totalEtf)} en ETF. Répartis chaque achat 70% CW8 + 30% 500.PA.`;
+  } else if (phase === 3) {
+    entete = `<strong>Phase 3 — ajout Asie.</strong> Tu as ${fmt.eur(totalEtf)} en ETF. Répartis 60% CW8 + 25% 500 + 15% AASI.`;
+  } else {
+    entete = `<strong>Phase 4 — diversification complète.</strong> ETF = ${fmt.eur(totalEtf)}.`;
+  }
+
   el.innerHTML = `<div class="propos-card">
-    <div class="propos-title">📋 Propositions du mois — ${phaseLabel}</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">
-      ${total > 0 ? `Portefeuille : <strong style="color:var(--text);">${fmt.eur(total)}</strong> · ` : ""}<strong style="color:var(--text);">Ce mois, achète ${props.length === 1 ? "ça" : "ces ETF dans ces proportions"}</strong>${props.length > 1 ? " :" : "."}
-    </div>
+    <div class="propos-title">💡 Ce mois — ${phaseLabel}</div>
+    <div style="font-size:13px;color:var(--text);margin-bottom:12px;line-height:1.5;">${entete}</div>
     ${props.map(p => `<div class="propos-line">
       <div class="propos-info">
         <div class="propos-ticker">${p.ticker}${props.length > 1 ? ` <span style="color:var(--muted);font-size:11px;font-weight:400;">${p.part}%</span>` : ""}</div>
@@ -2077,9 +2096,6 @@ async function renderPropositions() {
       </div>
       <button class="propos-btn" onclick="proposExecute('${p.ticker}', null)">💰 J'ai fait</button>
     </div>`).join("")}
-    <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">
-      💡 Tu choisis le montant € dans la modale après avoir cliqué.${props.length > 1 ? ` Si tu mets <strong>200 €</strong> ce mois en Phase 2, ça donne ~140 € sur CW8 et ~60 € sur 500.PA.` : ""}
-    </div>
   </div>`;
 }
 
