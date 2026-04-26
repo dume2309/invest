@@ -486,10 +486,7 @@
     <div class="card">
       <h2>
         Positions
-        <span style="display:flex;gap:6px;">
-          <button class="primary" onclick="openExpressModal()" style="padding:6px 12px;font-size:12px;min-height:30px;">💰 J'ai acheté</button>
-          <button onclick="openAddModal()" style="padding:6px 10px;font-size:11px;min-height:30px;" title="Saisie détaillée">+</button>
-        </span>
+        <button class="primary" onclick="openExpressModal()" style="padding:6px 12px;font-size:12px;min-height:30px;">💰 J'ai acheté</button>
       </h2>
       <div id="positionsList">
         <div class="empty">Aucune position. Clique sur « 💰 J'ai acheté ».</div>
@@ -1011,7 +1008,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v4.7";
+const APP_VERSION = "v4.8";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -2830,10 +2827,7 @@ async function renderPropositions() {
         <div class="propos-ticker">${p.ticker}${visibleProps.length > 1 ? ` <span style="color:var(--muted);font-size:11px;font-weight:400;">${p.part}%</span>` : ""}</div>
         <div class="propos-desc">${p.desc}</div>
       </div>
-      <div style="display:flex;gap:6px;align-items:center;">
-        <button class="propos-btn" onclick="proposExecute('${p.ticker}', null)">💰 J'ai fait</button>
-        <button onclick="dismissAdvice('${p.ticker}')" title="Cacher pour ce mois" style="background:transparent;border:1px solid var(--bg-4);color:var(--muted);padding:4px 8px;font-size:11px;min-height:26px;border-radius:6px;cursor:pointer;">✕</button>
-      </div>
+      <button onclick="dismissAdvice('${p.ticker}')" title="Cacher pour ce mois" style="background:transparent;border:1px solid var(--bg-4);color:var(--muted);padding:4px 8px;font-size:11px;min-height:26px;border-radius:6px;cursor:pointer;">✕</button>
     </div>`).join("")}
   </div>`;
 }
