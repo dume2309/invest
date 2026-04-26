@@ -992,7 +992,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v2.7";
+const APP_VERSION = "v2.8";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -2160,9 +2160,9 @@ function getUserLevel() {
   const nbPos = D.positions.length;
   const nbTx = (D.transactions || []).length;
   const dates = D.positions.map(p => p.date_achat).filter(Boolean).sort();
-  const hasETFWorld = D.positions.some(p => p.ticker === "DCAM.PA");
-  const hasSP500 = D.positions.some(p => p.ticker === "500.PA");
-  const hasAsia = D.positions.some(p => p.ticker === "AASI.PA");
+  const hasETFWorld = D.positions.some(p => ["DCAM.PA","WPEA.PA","EWLD.PA","CW8.PA"].includes(p.ticker));
+  const hasSP500 = D.positions.some(p => ["SPEA.PA","ESE.PA","PE500.PA","500.PA"].includes(p.ticker));
+  const hasAsia = D.positions.some(p => ["AASI.PA","AEEM.PA","PAEEM.PA"].includes(p.ticker));
   const hasAction = D.positions.some(p => p.type === "Action");
   const hasOr = D.positions.some(p => p.type === "Or");
   const moisDca = dates.length ? Math.floor((Date.now() - new Date(dates[0]).getTime()) / (30 * 86400000)) : 0;
@@ -2208,11 +2208,11 @@ function renderNiveau() {
   const all = [
     { id: "open_app", emoji: "📱", title: "Ouvrir l'appli", desc: "Tu es là, c'est déjà fait !", check: () => true },
     { id: "first_buy", emoji: "💰", title: "1er achat", desc: "Acheter ta première position (recommandé : 100 € de CW8.PA)", check: () => u.nbPos >= 1 },
-    { id: "etf_world", emoji: "🌍", title: "Avoir l'ETF World en socle", desc: "CW8.PA dans ton portefeuille", check: () => u.hasETFWorld },
+    { id: "etf_world", emoji: "🌍", title: "Avoir l'ETF World en socle", desc: "DCAM.PA / WPEA.PA dans ton portefeuille", check: () => u.hasETFWorld },
     { id: "dca_3", emoji: "📅", title: "3 achats au compteur", desc: "Régularité dans le DCA", check: () => u.nbTx >= 3 },
     { id: "dca_6mois", emoji: "🗓️", title: "6 mois d'investissement", desc: "Tenir la route sur 6 mois sans paniquer", check: () => u.moisDca >= 6 },
-    { id: "phase_2", emoji: "🇺🇸", title: "Diversifier US (Phase 2)", desc: "Ajouter 500.PA quand le portefeuille atteint 1 500 €", check: () => u.hasSP500 },
-    { id: "phase_3", emoji: "🌏", title: "Ajouter l'Asie (Phase 3)", desc: "AASI.PA pour viser les marchés émergents", check: () => u.hasAsia },
+    { id: "phase_2", emoji: "🇺🇸", title: "Diversifier US (Phase 2)", desc: "Ajouter SPEA.PA / ESE.PA quand le portefeuille atteint 1 500 €", check: () => u.hasSP500 },
+    { id: "phase_3", emoji: "🌏", title: "Ajouter l'Asie (Phase 3)", desc: "AEEM.PA / PAEEM.PA / AASI.PA pour les marchés émergents", check: () => u.hasAsia },
     { id: "first_action", emoji: "🚀", title: "1ère action individuelle", desc: "Petite ligne sur une action (NVDA recommandée en 1er)", check: () => u.hasAction },
     { id: "first_or", emoji: "🥇", title: "Premier or physique", desc: "Lingotin ou Napoléon chez Godot & Fils", check: () => u.hasOr },
     { id: "dca_12mois", emoji: "🏆", title: "1 an d'investissement", desc: "La régularité paye, tu as tenu 1 an", check: () => u.moisDca >= 12 },
@@ -2287,7 +2287,7 @@ async function renderPropositions() {
   const el = $("propositionsZone"); if (!el) return;
 
   // Calcul total ETF (CW8/500.PA/AASI/AEEM uniquement, pas or ni actions)
-  const ETF_TICKERS = ["DCAM.PA","500.PA","AASI.PA","AEEM.PA"];
+  const ETF_TICKERS = ["DCAM.PA","SPEA.PA","WPEA.PA","EWLD.PA","CW8.PA","ESE.PA","PE500.PA","500.PA","AEEM.PA","PAEEM.PA","AASI.PA","PCEU.PA","PANX.PA","PUST.PA","ANX.PA","CEU.PA"];
   let totalEtf = 0, totalAll = 0, totalOr = 0;
   for (const p of D.positions) {
     try {
