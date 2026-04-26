@@ -708,10 +708,17 @@
       </div>
       <div class="setting-row">
         <div>
-          <div class="setting-label">📲 Lien d'install rapide</div>
-          <div class="setting-sub">Pour configurer un autre appareil (iPad, iPhone) en un clic. Copie le lien et envoie-le toi par mail/AirDrop. ⚠ Ne le partage à personne.</div>
+          <div class="setting-label">📲 Lien d'install rapide (générer)</div>
+          <div class="setting-sub">Sur PC déjà configuré : copie le lien magique et envoie-le sur iPad/iPhone (mail, note iCloud, AirDrop). ⚠ Ne le partage à personne.</div>
         </div>
-        <button onclick="generateInstallLink()">🔗 Lien</button>
+        <button onclick="generateInstallLink()">🔗 Générer</button>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">📥 Importer config depuis lien</div>
+          <div class="setting-sub">Sur iPad/iPhone : si tu as installé l'app et qu'elle est vide, colle ici le lien magique reçu pour configurer le token. (À utiliser à la place de "Configurer le token" si tu n'as pas envie de retaper le PAT.)</div>
+        </div>
+        <button onclick="importConfigFromLink()">📥 Importer</button>
       </div>
       <div class="setting-row">
         <div>
@@ -999,7 +1006,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v3.4";
+const APP_VERSION = "v3.5";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1808,6 +1815,30 @@ async function generateInstallLink() {
   } catch {
     // Fallback : afficher le lien dans une popup pour copier manuellement
     prompt("Copie ce lien et envoie-le sur ton autre appareil :", link);
+  }
+}
+
+async function importConfigFromLink() {
+  const link = prompt("Colle ici le lien d'install (qui contient #config=...) :");
+  if (!link) return;
+  try {
+    let hash = "";
+    if (link.includes("#config=")) {
+      hash = link.substring(link.indexOf("#config="));
+    } else if (link.startsWith("config=") || link.startsWith("#config=")) {
+      hash = link.startsWith("#") ? link : "#" + link;
+    } else {
+      toast("Lien invalide — il doit contenir #config=...", "error");
+      return;
+    }
+    const encoded = hash.slice(8);
+    const tok = decodeURIComponent(escape(atob(encoded)));
+    localStorage.setItem(TOKEN_KEY, tok);
+    updateTokenStatus();
+    toast("Token importé — synchronisation…", "success");
+    await ghPullNow();
+  } catch (e) {
+    toast("Erreur import : " + e.message, "error");
   }
 }
 
