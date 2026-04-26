@@ -823,16 +823,38 @@
     <div class="form-row">
       <label>Quoi as-tu acheté ?</label>
       <select id="x_ticker" onchange="toggleExpressFields()">
-        <option value="DCAM.PA">DCAM.PA — Amundi PEA MSCI World (~5,67 €/part) ⭐ recommandé</option>
-        <option value="SPEA.PA">SPEA.PA — iShares S&P 500 Swap PEA (~5,90 €/part) ⭐</option>
-        <option value="EWLD.PA">EWLD.PA — Amundi MSCI World Dist (~38 €/part)</option>
-        <option value="ESE.PA">ESE.PA — BNP S&P 500 (~31 €/part)</option>
-        <option value="500.PA">500.PA — Amundi S&P 500 Acc (~122 €/part)</option>
-        <option value="AEEM.PA">AEEM.PA — Amundi MSCI Emerging (~7 €/part)</option>
-        <option value="PAEEM.PA">PAEEM.PA — Amundi PEA Émergents (~33 €/part)</option>
-        <option value="AASI.PA">AASI.PA — Amundi MSCI EM Asia (~53 €/part)</option>
-        <option value="PCEU.PA">PCEU.PA — Amundi PEA Europe (~37 €/part)</option>
-        <option value="PANX.PA">PANX.PA — Amundi PEA US Tech (~72 €/part)</option>
+        <optgroup label="🌍 MSCI World (PEA)">
+          <option value="DCAM.PA">DCAM — Amundi PEA MSCI World (~5,67 €) ⭐ démarrage</option>
+          <option value="WPEA.PA">WPEA — iShares MSCI World Swap PEA (~6,40 €)</option>
+          <option value="EWLD.PA">EWLD — Amundi MSCI World Dist (~38 €)</option>
+          <option value="CW8.PA">CW8 — Amundi MSCI World Acc (~636 €)</option>
+        </optgroup>
+        <optgroup label="🇺🇸 S&P 500 (PEA)">
+          <option value="SPEA.PA">SPEA — iShares S&P 500 Swap PEA (~5,90 €) ⭐</option>
+          <option value="ESE.PA">ESE — BNP Easy S&P 500 (~31 €)</option>
+          <option value="PE500.PA">PE500 — Amundi PEA S&P 500 Screened (~50 €)</option>
+          <option value="500.PA">500 — Amundi S&P 500 Acc (~122 €)</option>
+        </optgroup>
+        <optgroup label="🌏 Émergents / Asie (PEA)">
+          <option value="AEEM.PA">AEEM — Amundi MSCI Emerging (~7 €)</option>
+          <option value="PAEEM.PA">PAEEM — Amundi PEA Émergents ESG (~33 €)</option>
+          <option value="AASI.PA">AASI — Amundi MSCI EM Asia (~53 €)</option>
+        </optgroup>
+        <optgroup label="🇪🇺 Europe (PEA)">
+          <option value="PCEU.PA">PCEU — Amundi PEA MSCI Europe (~37 €)</option>
+          <option value="CEU.PA">CEU — Amundi MSCI Europe ESG (~413 €)</option>
+        </optgroup>
+        <optgroup label="💻 Nasdaq / Tech US (PEA)">
+          <option value="PANX.PA">PANX — Amundi PEA US Tech (~72 €)</option>
+          <option value="PUST.PA">PUST — Amundi PEA Nasdaq-100 (~93 €)</option>
+          <option value="ANX.PA">ANX — Amundi Nasdaq-100 (~266 €)</option>
+        </optgroup>
+        <optgroup label="📈 Actions individuelles (CTO requis)">
+          <option value="NVDA">NVDA — Nvidia (USD)</option>
+          <option value="RKLB">RKLB — Rocket Lab (USD)</option>
+          <option value="PLTR">PLTR — Palantir (USD)</option>
+          <option value="ANET">ANET — Arista Networks (USD)</option>
+        </optgroup>
         <option value="NVDA">NVDA — Nvidia (USD)</option>
         <option value="RKLB">RKLB — Rocket Lab (USD)</option>
         <option value="GC=F-LINGOT">🥇 Or — Lingot (en grammes)</option>
@@ -970,7 +992,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v2.5";
+const APP_VERSION = "v2.6";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
