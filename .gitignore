@@ -4,7 +4,6 @@ portfolio.json
 # Captures écran achats (perso, ne pas publier)
 CE/
 
-
 # Python
 __pycache__/
 *.py[cod]

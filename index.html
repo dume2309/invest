@@ -822,13 +822,15 @@
     </p>
     <div class="form-row">
       <label>Quoi as-tu acheté ?</label>
-      <select id="x_ticker">
-        <option value="CW8.PA">CW8.PA — Amundi MSCI World (recommandé démarrage)</option>
+      <select id="x_ticker" onchange="toggleExpressFields()">
+        <option value="AWLD.PA">CW8.PA — Amundi MSCI World (recommandé démarrage)</option>
         <option value="500.PA">500.PA — Amundi S&P 500</option>
         <option value="AASI.PA">AASI.PA — Amundi MSCI EM Asia</option>
         <option value="NVDA">NVDA — Nvidia (USD)</option>
         <option value="RKLB">RKLB — Rocket Lab (USD)</option>
-        <option value="GC=F">Or physique (en grammes)</option>
+        <option value="GC=F-LINGOT">🥇 Or — Lingot (en grammes)</option>
+        <option value="GC=F-NAPOLEON">🥇 Or — Napoléon 20F (en grammes)</option>
+        <option value="GC=F">🥇 Or — autre / générique (en grammes)</option>
         <option value="__other__">Autre ticker…</option>
       </select>
     </div>
@@ -853,6 +855,36 @@
     <div class="modal-actions">
       <button onclick="closeModal('expressModal')">Annuler</button>
       <button class="primary" id="x_save" onclick="saveExpressPosition()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="sellModal" onclick="if(event.target===this)closeModal('sellModal')">
+  <div class="modal">
+    <h3>💵 J'ai vendu</h3>
+    <div id="sellInfo" style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.5;"></div>
+    <div class="form-row">
+      <label>Type de vente</label>
+      <select id="s_type" onchange="toggleSellFields()">
+        <option value="totale">Vente totale (je supprime la position)</option>
+        <option value="partielle">Vente partielle (je garde une partie)</option>
+      </select>
+    </div>
+    <div class="form-row" id="s_partielleRow" style="display:none;">
+      <label>Quantité vendue (parts ou grammes)</label>
+      <input id="s_quantite" type="number" inputmode="decimal" step="0.0001" placeholder="ex. 5">
+    </div>
+    <div class="form-row">
+      <label>Date de vente</label>
+      <input id="s_date" type="date">
+    </div>
+    <div class="form-row">
+      <label>Montant reçu (€) <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;">— optionnel, pour traçabilité</span></label>
+      <input id="s_recu" type="number" inputmode="decimal" step="0.01" placeholder="ex. 200">
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeModal('sellModal')">Annuler</button>
+      <button class="primary" onclick="saveSell()">Confirmer la vente</button>
     </div>
   </div>
 </div>
@@ -931,7 +963,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v2.2";
+const APP_VERSION = "v2.3";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1199,6 +1231,7 @@ function renderPositions(valos) {
         <span>${fmt.num(p.quantite, p.type === "Or" ? 2 : 4)}${unite} × ${fmt.num(p.prix_achat, 2)} ${p.devise}</span>
         <span>Cours ${fmt.num(p.prix_actuel, 2)} ${p.devise_cotation}</span>
         <span class="${cls(p.change_pct_jour)}">Jour ${fmt.pct(p.change_pct_jour)}</span>
+        <button onclick="event.stopPropagation();openSellModal('${p.id}')" style="background:transparent;color:var(--blue);padding:2px 8px;font-size:11px;min-height:24px;border:1px solid var(--blue);border-radius:4px;margin-left:auto;">💵 Vendu</button>
       </div>
       <div style="margin-top:6px;padding:6px 8px;background:var(--bg-4);border-radius:6px;">
         ${riskRangeHtml(p.ticker, p.type, p.valeur_eur)}
@@ -1370,7 +1403,7 @@ function openExpressModal() {
   $("x_orQte").value = "";
   $("x_otherTicker").value = "";
   $("x_date").value = new Date().toISOString().slice(0, 10);
-  $("x_ticker").value = "CW8.PA";
+  $("x_ticker").value = "AWLD.PA";
   $("x_preview").style.display = "none";
   toggleExpressFields();
   $("expressModal").classList.add("active");
@@ -1382,9 +1415,10 @@ function openExpressModal() {
 
 function toggleExpressFields() {
   const t = $("x_ticker").value;
+  const isOr = t === "GC=F" || t === "GC=F-LINGOT" || t === "GC=F-NAPOLEON";
   $("x_otherRow").style.display = t === "__other__" ? "" : "none";
-  $("x_orRow").style.display = t === "GC=F" ? "" : "none";
-  $("x_montantLabel").textContent = t === "GC=F" ? "Prix payé total (€)" : "Montant investi (€)";
+  $("x_orRow").style.display = isOr ? "" : "none";
+  $("x_montantLabel").textContent = isOr ? "Prix payé total (€)" : "Montant investi (€)";
 }
 
 async function expressPreview() {
@@ -1416,22 +1450,28 @@ async function expressPreview() {
 }
 
 async function saveExpressPosition() {
-  const tk = $("x_ticker").value === "__other__" ? $("x_otherTicker").value.trim().toUpperCase() : $("x_ticker").value;
+  const sel = $("x_ticker").value;
+  const isOrType = sel === "GC=F" || sel === "GC=F-LINGOT" || sel === "GC=F-NAPOLEON";
+  // Le ticker stocké est toujours GC=F (pour le cours), on ajoute or_type
+  const tk = sel === "__other__" ? $("x_otherTicker").value.trim().toUpperCase()
+           : isOrType ? "GC=F" : sel;
+  const orType = sel === "GC=F-LINGOT" ? "lingot" : sel === "GC=F-NAPOLEON" ? "napoleon" : (isOrType ? "autre" : null);
   const montant = parseFloat($("x_montant").value);
   const orQte = parseFloat($("x_orQte").value);
   const date = $("x_date").value || new Date().toISOString().slice(0,10);
   if (!tk) { toast("Choisis un ticker", "error"); return; }
   if (!montant || montant <= 0) { toast("Indique le montant investi", "error"); return; }
-  if (tk === "GC=F" && (!orQte || orQte <= 0)) { toast("Indique la quantité en grammes", "error"); return; }
+  if (isOrType && (!orQte || orQte <= 0)) { toast("Indique la quantité en grammes", "error"); return; }
 
   $("x_save").innerHTML = '<span class="loader"></span>';
   try {
     const q = await getQuote(tk);
     let qte, prixUnit, type, devise, nom;
-    if (tk === "GC=F") {
+    if (isOrType) {
       qte = orQte;
-      prixUnit = montant / orQte; // €/g (utilisateur saisit en €)
-      type = "Or"; devise = "EUR"; nom = "Or physique";
+      prixUnit = montant / orQte;
+      type = "Or"; devise = "EUR";
+      nom = orType === "lingot" ? "Or Lingots" : orType === "napoleon" ? "Or Napoléons 20F" : "Or physique";
     } else {
       qte = montant / q.price;
       prixUnit = q.price;
@@ -1440,13 +1480,16 @@ async function saveExpressPosition() {
       const isAction = !tk.includes(".") || tk.endsWith(".US");
       type = isAction && tk !== "GC=F" ? "Action" : "ETF";
       // Heuristique : ETF Amundi reconnus
-      if (["CW8.PA","500.PA","AASI.PA","AEEM.PA"].includes(tk)) type = "ETF";
+      if (["AWLD.PA","500.PA","AASI.PA","AEEM.PA"].includes(tk)) type = "ETF";
       if (["NVDA","RKLB","PLTR","SMCI","ANET","TSLA","AAPL","MSFT","GOOGL","AMZN","META"].includes(tk)) type = "Action";
       nom = q.name || tk;
     }
 
     // Fusion avec position existante (PRU pondéré)
-    const existing = D.positions.find(p => p.ticker === tk);
+    // Pour l'or : fusion seulement si même or_type (lingot/napoleon/autre)
+    const existing = D.positions.find(p =>
+      p.ticker === tk && (!isOrType || (p.or_type || "autre") === (orType || "autre"))
+    );
     if (existing) {
       const oldQte = existing.quantite;
       const oldPru = existing.prix_achat;
@@ -1454,11 +1497,13 @@ async function saveExpressPosition() {
       const newPru = (oldQte * oldPru + qte * prixUnit) / newQte;
       existing.quantite = newQte;
       existing.prix_achat = newPru;
-      existing.date_achat = date; // dernier achat
+      existing.date_achat = date;
+      if (isOrType) existing.or_type = orType;
     } else {
       D.positions.push({
         id: uuid(), ticker: tk, nom, type, devise,
         quantite: qte, prix_achat: prixUnit, date_achat: date,
+        ...(isOrType ? { or_type: orType } : {}),
       });
     }
 
@@ -1526,6 +1571,68 @@ function savePosition() {
   refreshAll();
   toast(editingId ? "Position modifiée" : "Position ajoutée", "success");
 }
+// === VENTE ===
+let sellingId = null;
+function openSellModal(id) {
+  const p = D.positions.find(x => x.id === id);
+  if (!p) return;
+  sellingId = id;
+  const unite = p.type === "Or" ? "g" : "parts";
+  $("sellInfo").innerHTML = `Position : <strong>${p.ticker}</strong> · ${fmt.num(p.quantite, 4)} ${unite} · PRU ${fmt.num(p.prix_achat, 2)} ${p.devise}/${p.type === "Or" ? "g" : "part"}`;
+  $("s_type").value = "totale";
+  $("s_quantite").value = "";
+  $("s_recu").value = "";
+  $("s_date").value = new Date().toISOString().slice(0, 10);
+  toggleSellFields();
+  $("sellModal").classList.add("active");
+}
+function toggleSellFields() {
+  $("s_partielleRow").style.display = $("s_type").value === "partielle" ? "" : "none";
+}
+function saveSell() {
+  const p = D.positions.find(x => x.id === sellingId);
+  if (!p) { closeModal("sellModal"); return; }
+  const type = $("s_type").value;
+  const date = $("s_date").value || new Date().toISOString().slice(0, 10);
+  const recu = parseFloat($("s_recu").value) || null;
+
+  if (!D.transactions) D.transactions = [];
+
+  if (type === "totale") {
+    // Tout vendu → suppression position + tombstone
+    D.transactions.push({
+      id: uuid(), ticker: p.ticker, date,
+      operation: "vente_totale",
+      quantite: p.quantite, prix_unitaire: p.prix_achat,
+      montant_recu: recu, devise: p.devise,
+      note: `Vente totale ${p.nom || p.ticker}`,
+    });
+    D.positions = D.positions.filter(x => x.id !== sellingId);
+    D.deletedIds.push({ id: sellingId, type: "position", ts: Date.now() });
+    saveLocal();
+    refreshAll();
+    toast(`Position ${p.ticker} fermée${recu ? ` — ${fmt.eur(recu)} reçus` : ""}`, "success");
+  } else {
+    const qVendue = parseFloat($("s_quantite").value);
+    if (!qVendue || qVendue <= 0) { toast("Indique la quantité vendue", "error"); return; }
+    if (qVendue >= p.quantite) { toast("Quantité ≥ position totale → utilise 'Vente totale'", "error"); return; }
+    p.quantite = p.quantite - qVendue;
+    // PRU inchangé (méthode classique : on vend à PRU)
+    D.transactions.push({
+      id: uuid(), ticker: p.ticker, date,
+      operation: "vente_partielle",
+      quantite: qVendue, prix_unitaire: p.prix_achat,
+      montant_recu: recu, devise: p.devise,
+      note: `Vente partielle ${p.nom || p.ticker}`,
+    });
+    saveLocal();
+    refreshAll();
+    toast(`Vendu ${fmt.num(qVendue, 4)} ${p.type === "Or" ? "g" : "parts"} de ${p.ticker}`, "success");
+  }
+  closeModal("sellModal");
+  sellingId = null;
+}
+
 function delPosition(id) {
   if (!confirm("Supprimer cette position ?")) return;
   D.positions = D.positions.filter(p => p.id !== id);
@@ -1933,8 +2040,8 @@ async function generateAutoAlerts() {
 
   // 5. MARCHÉ GLOBAL — repli ou surchauffe
   try {
-    const q = await getQuote("CW8.PA");
-    const hist = await fetchYahooHistory("CW8.PA", "6mo");
+    const q = await getQuote("AWLD.PA");
+    const hist = await fetchYahooHistory("AWLD.PA", "6mo");
     const closes = hist.map(d => d.close);
     const var1m = closes.length > 21 ? (q.price / closes[closes.length - 22] - 1) * 100 : 0;
     if (var1m < -8) {
@@ -1942,7 +2049,7 @@ async function generateAutoAlerts() {
         kind: "opportunite", emoji: "🌍", priority: 3,
         title: `Marché mondial en repli de ${var1m.toFixed(1)}% sur 1 mois`,
         body: `<strong>C'est une fenêtre d'achat</strong>. Les actions sont en solde. Si ton budget le permet, <strong>double ton DCA habituel ce mois</strong> (ex. 400-500 € au lieu de 200). Le marché remonte historiquement après ces phases.`,
-        action: { label: "💰 Je renforce CW8.PA", ticker: "CW8.PA" },
+        action: { label: "💰 Je renforce CW8.PA", ticker: "AWLD.PA" },
       });
     }
     if (var1m > 12) {
@@ -1960,7 +2067,7 @@ async function generateAutoAlerts() {
       kind: "info", emoji: "🌱", priority: 5,
       title: "Tu n'as pas encore commencé",
       body: `Premier achat recommandé : <strong>100 € de CW8.PA</strong> (Amundi MSCI World). Ouvre l'onglet Positions et clique 💰 J'ai acheté quand c'est fait.`,
-      action: { label: "💰 Premier achat 100 € CW8.PA", ticker: "CW8.PA", montant: 100 },
+      action: { label: "💰 Premier achat 100 € CW8.PA", ticker: "AWLD.PA", montant: 100 },
     });
   }
 
@@ -2023,7 +2130,7 @@ function getUserLevel() {
   const nbPos = D.positions.length;
   const nbTx = (D.transactions || []).length;
   const dates = D.positions.map(p => p.date_achat).filter(Boolean).sort();
-  const hasETFWorld = D.positions.some(p => p.ticker === "CW8.PA");
+  const hasETFWorld = D.positions.some(p => p.ticker === "AWLD.PA");
   const hasSP500 = D.positions.some(p => p.ticker === "500.PA");
   const hasAsia = D.positions.some(p => p.ticker === "AASI.PA");
   const hasAction = D.positions.some(p => p.type === "Action");
@@ -2150,7 +2257,7 @@ async function renderPropositions() {
   const el = $("propositionsZone"); if (!el) return;
 
   // Calcul total ETF (CW8/500.PA/AASI/AEEM uniquement, pas or ni actions)
-  const ETF_TICKERS = ["CW8.PA","500.PA","AASI.PA","AEEM.PA"];
+  const ETF_TICKERS = ["AWLD.PA","500.PA","AASI.PA","AEEM.PA"];
   let totalEtf = 0, totalAll = 0, totalOr = 0;
   for (const p of D.positions) {
     try {
@@ -2174,19 +2281,19 @@ async function renderPropositions() {
   // Construction des propositions selon la phase (% uniquement, pas de €)
   const props = [];
   if (phase === 0) {
-    props.push({ ticker: "CW8.PA", part: 100, desc: "1er achat — l'ETF World, le plus diversifié (1 600 entreprises). Mets ce que tu peux : 50 €, 100 €, 200 €." });
+    props.push({ ticker: "AWLD.PA", part: 100, desc: "1er achat — l'ETF World, le plus diversifié (1 600 entreprises). Mets ce que tu peux : 50 €, 100 €, 200 €." });
   } else if (phase === 1) {
-    props.push({ ticker: "CW8.PA", part: 100, desc: `Continue à 100% sur CW8.PA jusqu'à ~1 500 € (tu es à ${fmt.eur(total)}).` });
+    props.push({ ticker: "AWLD.PA", part: 100, desc: `Continue à 100% sur CW8.PA jusqu'à ~1 500 € (tu es à ${fmt.eur(total)}).` });
   } else if (phase === 2) {
-    props.push({ ticker: "CW8.PA", part: 70, desc: "Socle mondial" });
+    props.push({ ticker: "AWLD.PA", part: 70, desc: "Socle mondial" });
     props.push({ ticker: "500.PA", part: 30, desc: "Renforcement US" });
   } else if (phase === 3) {
-    props.push({ ticker: "CW8.PA", part: 60, desc: "Socle mondial" });
+    props.push({ ticker: "AWLD.PA", part: 60, desc: "Socle mondial" });
     props.push({ ticker: "500.PA", part: 25, desc: "Renforcement US" });
     props.push({ ticker: "AASI.PA", part: 15, desc: "Asie émergente (Inde, Chine, Corée)" });
   } else {
     // Phase 4 — diversification complète
-    props.push({ ticker: "CW8.PA", part: 50, desc: "Socle mondial" });
+    props.push({ ticker: "AWLD.PA", part: 50, desc: "Socle mondial" });
     props.push({ ticker: "500.PA", part: 22, desc: "Renforcement US" });
     props.push({ ticker: "AASI.PA", part: 8, desc: "Asie émergente" });
     props.push({ ticker: "NVDA", part: 6, desc: "IA via leader (CTO requis)" });
@@ -2233,7 +2340,7 @@ async function renderPropositions() {
 
 // === Profil risque/rendement par ticker (volatilité annuelle, rendement moyen historique) ===
 const RISK_DATA = {
-  "CW8.PA":  { vol: 15, rendement: 7,  pireBaisse: -25, label: "ETF World — diversifié" },
+  "AWLD.PA":  { vol: 15, rendement: 7,  pireBaisse: -25, label: "ETF World — diversifié" },
   "500.PA":  { vol: 18, rendement: 9,  pireBaisse: -30, label: "ETF S&P 500 — concentré US" },
   "AASI.PA": { vol: 22, rendement: 6,  pireBaisse: -35, label: "ETF EM Asia — émergents" },
   "AEEM.PA": { vol: 22, rendement: 6,  pireBaisse: -35, label: "ETF Emerging Markets" },
@@ -2284,11 +2391,11 @@ async function renderPrevu() {
   }
   const phase = getPhase(total);
   const tickersByPhase = [
-    ["CW8.PA"],
-    ["CW8.PA"],
-    ["CW8.PA","500.PA"],
-    ["CW8.PA","500.PA","AASI.PA"],
-    ["CW8.PA","500.PA","AASI.PA","NVDA","RKLB"],
+    ["AWLD.PA"],
+    ["AWLD.PA"],
+    ["AWLD.PA","500.PA"],
+    ["AWLD.PA","500.PA","AASI.PA"],
+    ["AWLD.PA","500.PA","AASI.PA","NVDA","RKLB"],
   ];
   const tickers = tickersByPhase[phase];
 
@@ -2431,8 +2538,8 @@ async function renderMoment() {
   el.innerHTML = `<div class="moment-card yellow"><span class="rappel-emoji">📊</span>
     <div class="moment-text"><strong>Conseil du moment</strong> <span class="loader"></span> Analyse en cours…</div></div>`;
   try {
-    const q = await getQuote("CW8.PA");
-    const hist = await fetchYahooHistory("CW8.PA", "6mo");
+    const q = await getQuote("AWLD.PA");
+    const hist = await fetchYahooHistory("AWLD.PA", "6mo");
     const closes = hist.map(d => d.close);
     if (closes.length < 30) {
       el.innerHTML = `<div class="moment-card yellow"><span class="rappel-emoji">📊</span>
@@ -2477,7 +2584,7 @@ async function renderMoment() {
 // ============================================================================
 // Profil de risque par ticker connu (1=très faible, 5=très élevé)
 const RISK_PROFILE = {
-  "CW8.PA": 2,   // ETF World ultra-diversifié
+  "AWLD.PA": 2,   // ETF World ultra-diversifié
   "500.PA": 3,   // S&P 500 — concentré US mais 500 lignes
   "AASI.PA": 4,  // EM Asia — émergents, plus volatil
   "AEEM.PA": 4,
@@ -2512,7 +2619,7 @@ function riskPill(level) {
 }
 
 // Allocation cible utilisateur
-const ALLOC_CIBLE_ETF = { "CW8.PA": 50, "500.PA": 30, "AASI.PA": 20 };
+const ALLOC_CIBLE_ETF = { "AWLD.PA": 50, "500.PA": 30, "AASI.PA": 20 };
 
 // Calcul moyenne mobile
 function ma(values, n) {
@@ -2557,7 +2664,7 @@ function conseilCard(action, titre, explication, risk=null) {
 // === Allocation cible PROFIL PRUDENT ===
 // Socle ETF 75-80%, IA via large cap 5-8%, spatial 1-2%, or 5-15%
 const ALLOC_RECO_PRUDENT = {
-  "CW8.PA":  { cible: 50, role: "Socle mondial — 1 600 entreprises, le plus diversifié",       cat: "ETF" },
+  "AWLD.PA":  { cible: 50, role: "Socle mondial — 1 600 entreprises, le plus diversifié",       cat: "ETF" },
   "500.PA":  { cible: 22, role: "Renforcement US — moteur historique de la croissance",         cat: "ETF" },
   "AASI.PA": { cible: 8,  role: "Asie émergente — Inde/Chine/Corée, croissance long terme",    cat: "ETF" },
   "NVDA":    { cible: 6,  role: "Exposition IA via leader large cap (moat fort)",               cat: "Action" },
