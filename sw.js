@@ -1,15 +1,15 @@
 // Service Worker — Portfolio Tracker
 // Stratégie : network-first pour HTML/JSON, cache-first pour assets statiques
-const CACHE = "invest-v24";
+const CACHE = "invest-v25";
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./icon-192.png",
-  "./icon-512.png",
-  "./icon-512-maskable.png",
-  "./apple-touch-icon.png",
-  "./favicon.ico",
+  "./icon-192-v3.png",
+  "./icon-512-v3.png",
+  "./icon-512-maskable-v3.png",
+  "./apple-touch-icon-v3.png",
+  "./favicon-v3.ico",
   "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
 ];
 
