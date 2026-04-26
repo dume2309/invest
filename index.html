@@ -1011,7 +1011,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v4.0";
+const APP_VERSION = "v4.1";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -2361,6 +2361,74 @@ async function generateAutoAlerts() {
       body: `Premier achat recommandé : <strong>100 € de DCAM</strong> (Amundi PEA MSCI World, ~5,67 €/part = 18 parts). Ouvre l'onglet Positions et clique 💰 J'ai acheté quand c'est fait.`,
       action: { label: "💰 Premier achat 100 € DCAM", ticker: "DCAM.PA", montant: 100 },
     });
+  }
+
+  // 8. SURVEILLANCE OR — alerte si vente partielle rentable nette d'impôt
+  // Seuil : 2 000 € de vente nets avec +200 € de gain APRÈS impôt 36,2% (sur PV réelle)
+  const orPositions = valids.filter(p => p.type === "Or" && p.valeur_godot != null);
+  if (orPositions.length > 0) {
+    const objectifVente = 2000;
+    const gainNetMin = 200; // gain min APRÈS impôt pour déclencher
+    const tauxImpotPVReelle = 0.362;
+    // Privilégier Napoléons (meilleur prix de revente)
+    const napos = orPositions.find(p => p.or_type === "napoleon") || orPositions[0];
+    if (napos && napos.quantite > 0 && napos.cout_eur > 0) {
+      const valGodotParG = napos.valeur_godot / napos.quantite;
+      const pruParG = napos.cout_eur / napos.quantite;
+      // Quantité à vendre pour atteindre l'objectif
+      const qteAVendre = Math.min(objectifVente / valGodotParG, napos.quantite);
+      // Arrondir au nb de Napoléons entiers
+      const nbNapos = napos.or_type === "napoleon" ? Math.round(qteAVendre / 6.4516) : null;
+      const qteEntiere = nbNapos != null ? nbNapos * 6.4516 : qteAVendre;
+      if (qteEntiere > 0 && qteEntiere <= napos.quantite) {
+        const valeurVente = qteEntiere * valGodotParG;
+        const coutVendu = qteEntiere * pruParG;
+        const pvBrute = valeurVente - coutVendu;
+        const impot = pvBrute > 0 ? pvBrute * tauxImpotPVReelle : 0;
+        const gainNet = pvBrute - impot;
+        if (gainNet >= gainNetMin) {
+          alerts.push({
+            kind: "opportunite", emoji: "🥇", priority: 2,
+            title: `Vente or rentable : +${gainNet.toFixed(0)} € net après impôt`,
+            body: `Le cours or est suffisamment haut pour vendre une partie avec un VRAI gain net.<br><br>
+              <strong>Reco :</strong> vendre <strong>${nbNapos != null ? nbNapos + " Napoléons" : qteEntiere.toFixed(2) + " g"}</strong> (${qteEntiere.toFixed(2)} g)<br>
+              • Reçu Godot estimé : <strong>${fmt.eur(valeurVente)}</strong><br>
+              • PV brute : +${fmt.eur(pvBrute)}<br>
+              • Impôt 36,2% (PV réelle, facture conservée) : −${fmt.eur(impot)}<br>
+              • <strong>Gain net : +${fmt.eur(gainNet)}</strong><br><br>
+              <strong>Réinvestissement suggéré :</strong> mettre les ${fmt.eur(valeurVente - impot)} en DCAM (~${Math.round((valeurVente - impot) / 5.67)} parts).<br><br>
+              ⚠ Vérifie quand même les frais réels de revente Godot avant de valider — l'estimation décote (-3% Napoléons) peut varier.`,
+            action: { label: "💵 J'ai vendu", positionId: napos.id },
+          });
+        }
+      }
+    }
+  }
+
+  // 9. SURVEILLANCE OR — info permanente sur le cours seuil à atteindre
+  // Si vente pas rentable maintenant : afficher quand elle le sera
+  if (orPositions.length > 0 && !alerts.some(a => a.title?.startsWith("Vente or rentable"))) {
+    const napos = orPositions.find(p => p.or_type === "napoleon");
+    if (napos && napos.cout_eur > 0) {
+      const pruParG = napos.cout_eur / napos.quantite;
+      const valGodotParG = napos.valeur_godot / napos.quantite;
+      // Cours spot cible : pour avoir +200 € nets sur 2000 € de Napoléons vendus
+      // Soit qte = 2000/cours_godot, gain_net = (qte * cours_godot - qte * pru) * (1 - 0.362) >= 200
+      // → qte * (cours_godot - pru) * 0.638 >= 200
+      // → 2000/cours_godot * (cours_godot - pru) * 0.638 >= 200
+      // → (cours_godot - pru) / cours_godot >= 200 / (2000 * 0.638) = 0.1568
+      // → cours_godot >= pru / (1 - 0.1568) = pru / 0.843
+      const seuilCoursGodot = pruParG / (1 - 200 / (2000 * (1 - 0.362)));
+      const seuilSpot = seuilCoursGodot / 0.97; // décote Godot Napoléons
+      const ecartPct = ((seuilSpot - (valGodotParG / 0.97)) / (valGodotParG / 0.97)) * 100;
+      alerts.push({
+        kind: "info", emoji: "🔍", priority: 5,
+        title: `Surveillance or — vente non rentable actuellement`,
+        body: `Pour vendre 2 000 € de Napoléons avec <strong>+200 € net après impôt 36,2%</strong>, il faut que le cours spot or atteigne <strong>${seuilSpot.toFixed(0)} €/g</strong> (cours actuel : ${(valGodotParG / 0.97).toFixed(0)} €/g, à <strong>+${ecartPct.toFixed(1)}%</strong>).<br><br>
+          🔔 Une alerte automatique se déclenchera dès que ce seuil est franchi.<br><br>
+          <em>Alternative : attendre 3+ ans détention pour bénéficier de l'abattement 5%/an (réduit l'impôt).</em>`,
+      });
+    }
   }
 
   // 7. INFO — pas d'achat depuis longtemps
