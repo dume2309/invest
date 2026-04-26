@@ -1355,6 +1355,42 @@ async function renderAlerts() {
     </div>`).join("");
 }
 
+// Vérifie EDGAR pour un dépôt S-1 SpaceX (cache 6h, notifie 1 fois)
+async function checkSpacexS1() {
+  const CACHE_KEY = "spacexS1Cache";
+  const NOTIF_KEY = "spacexS1Notified";
+  const TTL = 6 * 60 * 60 * 1000;
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+    if (c && Date.now() - c.ts < TTL) return c.data;
+  } catch {}
+  try {
+    const url = "https://efts.sec.gov/LATEST/search-index?q=%22Space+Exploration+Technologies%22&forms=S-1";
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("EDGAR " + res.status);
+    const j = await res.json();
+    const hits = j?.hits?.hits || [];
+    const filings = hits.map(h => ({
+      form: h._source?.form,
+      date: h._source?.file_date,
+      cik: (h._source?.ciks || [])[0],
+      accession: h._source?.adsh,
+      display: (h._source?.display_names || []).join(", "),
+    })).filter(f => /space\s*exploration/i.test(f.display));
+    filings.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    const data = { found: filings.length > 0, filings, checkedAt: Date.now() };
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+    if (data.found && !localStorage.getItem(NOTIF_KEY)) {
+      localStorage.setItem(NOTIF_KEY, "1");
+      const f = filings[0];
+      toast(`🔔 SpaceX S-1 publié sur EDGAR (${f.date}) !`, "success");
+    }
+    return data;
+  } catch (e) {
+    return { found: false, error: e.message };
+  }
+}
+
 async function renderWatchlist() {
   const el = $("watchlistList");
   if (!D.watchlist.length) {
@@ -1362,7 +1398,8 @@ async function renderWatchlist() {
   }
   const items = await Promise.all(D.watchlist.map(async (w) => {
     if (w.preIPO) {
-      return { ...w, score: 0, label: "🚀 Pré-IPO", color: "var(--accent)" };
+      const s1 = w.ticker === "SPACEX" ? await checkSpacexS1() : null;
+      return { ...w, score: 0, label: "🚀 Pré-IPO", color: "var(--accent)", s1 };
     }
     try {
       const q = await getQuote(w.ticker);
@@ -1396,6 +1433,24 @@ async function renderWatchlist() {
   el.innerHTML = items.map(w => {
     if (w.preIPO) {
       const est = w.priceEstimate || {};
+      const s1 = w.s1;
+      let s1Block = "";
+      if (s1?.found && s1.filings?.length) {
+        const f = s1.filings[0];
+        const cikPad = String(f.cik || "").padStart(10, "0");
+        const url = f.cik
+          ? `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${cikPad}&type=S-1&dateb=&owner=include&count=40`
+          : `https://efts.sec.gov/LATEST/search-index?q=%22Space+Exploration+Technologies%22&forms=S-1`;
+        s1Block = `<div style="margin-top:6px;padding:8px 10px;background:rgba(46,160,67,0.15);border:1px solid var(--green);border-radius:6px;font-size:11px;line-height:1.5;">
+          <div style="color:var(--green);font-weight:700;font-size:12px;margin-bottom:2px;">🔔 S-1 publié sur EDGAR — ${f.date}</div>
+          <div>Formulaire ${f.form} · ${f.display}</div>
+          <a href="${url}" target="_blank" rel="noopener" style="color:var(--accent);">→ Voir le dépôt SEC</a>
+        </div>`;
+      } else if (s1?.error) {
+        s1Block = `<div style="margin-top:6px;padding:6px 8px;background:var(--bg-4);border-radius:6px;font-size:10px;color:var(--muted);">⚠ Check EDGAR indisponible (${s1.error}). Réessai au prochain refresh.</div>`;
+      } else if (s1) {
+        s1Block = `<div style="margin-top:6px;padding:6px 8px;background:var(--bg-4);border-radius:6px;font-size:10px;color:var(--muted);">🔍 EDGAR : pas encore de S-1 public. Auto-check toutes les 6h.</div>`;
+      }
       return `<div class="pos-item">
         <div class="pos-row">
           <div>
@@ -1403,10 +1458,11 @@ async function renderWatchlist() {
             <span class="pos-name">${w.nom || ""}</span>
           </div>
           <div style="text-align:right;">
-            <div class="pos-value" style="color:var(--accent);">Pré-IPO</div>
+            <div class="pos-value" style="color:${s1?.found ? "var(--green)" : "var(--accent)"};">${s1?.found ? "S-1 publié" : "Pré-IPO"}</div>
             <div class="pos-pv" style="font-size:11px;color:var(--muted);">cible ${w.ipoDate || "—"}</div>
           </div>
         </div>
+        ${s1Block}
         ${est.low ? `<div style="margin-top:6px;padding:6px 8px;background:var(--bg-4);border-radius:6px;font-size:11px;line-height:1.5;">
           <div style="color:var(--accent);font-weight:700;font-size:12px;margin-bottom:2px;">🚀 Estimation prix d'introduction</div>
           <div><strong>${est.low}–${est.high} ${est.currency}</strong> · juste valeur ~${est.fairValue} ${est.currency}</div>
