@@ -1006,7 +1006,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v3.6";
+const APP_VERSION = "v3.7";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1139,13 +1139,37 @@ async function fetchYahooHistory(ticker, period) {
 async function getQuote(ticker) {
   const c = quoteCache[ticker];
   if (c && Date.now() - c.ts < QUOTE_TTL) return c.data;
-  const data = await fetchYahoo(ticker);
-  quoteCache[ticker] = { data, ts: Date.now() };
-  return data;
+  try {
+    const data = await fetchYahoo(ticker);
+    quoteCache[ticker] = { data, ts: Date.now() };
+    // Cache persistant en localStorage pour fallback offline / proxy KO
+    try { localStorage.setItem("cache_quote_" + ticker, JSON.stringify({ data, ts: Date.now() })); } catch {}
+    return data;
+  } catch (e) {
+    // Fallback : dernier cours connu en localStorage (peut dater de quelques heures)
+    try {
+      const raw = localStorage.getItem("cache_quote_" + ticker);
+      if (raw) {
+        const cached = JSON.parse(raw);
+        if (cached && cached.data) {
+          console.warn(`Cours ${ticker} : fallback cache ${Math.floor((Date.now()-cached.ts)/60000)} min`);
+          return cached.data;
+        }
+      }
+    } catch {}
+    throw e;
+  }
 }
 
 async function getEurUsd() {
-  try { return (await getQuote("EURUSD=X")).price; } catch { return 1.08; }
+  try { return (await getQuote("EURUSD=X")).price; } catch {
+    // Fallback : dernier taux connu en localStorage, sinon 1.17 (taux récent ~avril 2026)
+    try {
+      const raw = localStorage.getItem("cache_quote_EURUSD=X");
+      if (raw) { const c = JSON.parse(raw); if (c?.data?.price) return c.data.price; }
+    } catch {}
+    return 1.17;
+  }
 }
 
 // ============================================================================
@@ -1802,29 +1826,68 @@ function openCoachReport(idx) {
 // ============================================================================
 // SYNC GITHUB (Contents API)
 // ============================================================================
-// Stockage redondant token : localStorage + cookie (anti-purge iOS PWA standalone)
+// Stockage triple redondant : localStorage + cookie + IndexedDB (anti-purge iOS PWA)
+const IDB_NAME = "invest_db", IDB_STORE = "kv";
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbSet(key, val) {
+  try {
+    const db = await idbOpen();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      tx.objectStore(IDB_STORE).put(val, key);
+      tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error);
+    });
+  } catch {}
+}
+async function idbGet(key) {
+  try {
+    const db = await idbOpen();
+    return new Promise((res) => {
+      const tx = db.transaction(IDB_STORE, "readonly");
+      const req = tx.objectStore(IDB_STORE).get(key);
+      req.onsuccess = () => res(req.result);
+      req.onerror = () => res(null);
+    });
+  } catch { return null; }
+}
+
 function setTokenPersistent(token) {
   localStorage.setItem(TOKEN_KEY, token);
-  // Cookie 1 an, robuste aux fermetures PWA iOS
   const oneYear = 365 * 24 * 3600;
   document.cookie = `${TOKEN_KEY}=${encodeURIComponent(token)}; max-age=${oneYear}; path=/; SameSite=Lax; Secure`;
+  idbSet(TOKEN_KEY, token).catch(() => {});
 }
 function getToken() {
-  // 1. localStorage (rapide)
   let t = localStorage.getItem(TOKEN_KEY);
   if (t) return t;
-  // 2. Fallback cookie (iOS PWA standalone parfois purge localStorage)
   const m = document.cookie.match(new RegExp('(?:^|; )' + TOKEN_KEY + '=([^;]*)'));
   if (m) {
     t = decodeURIComponent(m[1]);
-    localStorage.setItem(TOKEN_KEY, t); // restore localStorage
+    localStorage.setItem(TOKEN_KEY, t);
     return t;
   }
   return null;
 }
+// Au boot, restauration depuis IndexedDB si tout le reste est vide
+async function restoreTokenFromIDB() {
+  if (getToken()) return; // déjà OK
+  const t = await idbGet(TOKEN_KEY);
+  if (t) {
+    setTokenPersistent(t);
+    console.log("Token restauré depuis IndexedDB");
+  }
+}
 function clearTokenPersistent() {
   localStorage.removeItem(TOKEN_KEY);
   document.cookie = `${TOKEN_KEY}=; max-age=0; path=/; SameSite=Lax; Secure`;
+  idbSet(TOKEN_KEY, null).catch(() => {});
 }
 
 async function generateInstallLink() {
@@ -3220,6 +3283,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   loadLocal();
   // Vérifier si on arrive depuis un lien d'install rapide (#config=...)
   checkInstallLink();
+  // Restaurer le token depuis IndexedDB si localStorage/cookie ont été purgés (iOS)
+  await restoreTokenFromIDB();
   updateTokenStatus();
   // Pull bloquant au boot si token présent (avant tout rendu/save)
   if (getToken()) {
