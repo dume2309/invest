@@ -880,7 +880,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v1.8";
+const APP_VERSION = "v1.9";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -2059,12 +2059,18 @@ async function renderPropositions() {
     props.push({ ticker: "500.PA", part: 25, desc: "Renforcement US" });
     props.push({ ticker: "AASI.PA", part: 15, desc: "Asie émergente (Inde, Chine, Corée)" });
   } else {
+    // Phase 4 — diversification complète
     props.push({ ticker: "CW8.PA", part: 50, desc: "Socle mondial" });
     props.push({ ticker: "500.PA", part: 22, desc: "Renforcement US" });
     props.push({ ticker: "AASI.PA", part: 8, desc: "Asie émergente" });
     props.push({ ticker: "NVDA", part: 6, desc: "IA via leader (CTO requis)" });
     props.push({ ticker: "RKLB", part: 2, desc: "Pari spatial petite ligne (CTO requis)" });
-    props.push({ ticker: "GC=F", part: 12, desc: "Or physique chez Godot" });
+    // Or : on ne propose d'en acheter QUE si l'utilisateur n'en a pas assez
+    // (cible 12-15% du total). Si totalOr > 12% du total → STOP achats or.
+    const partOrActuelle = total > 0 ? totalOr / total * 100 : 0;
+    if (partOrActuelle < 10) {
+      props.push({ ticker: "GC=F", part: 12, desc: "Or physique chez Godot" });
+    }
   }
 
   const phaseLabels = ["Démarrage", "Phase 1", "Phase 2", "Phase 3", "Phase 4"];
