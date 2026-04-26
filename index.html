@@ -3452,7 +3452,7 @@ function bootstrapWatchlist() {
     { ticker: "PLTR", nom: "Palantir", secteur: "IA défense", note: "Fort potentiel" },
     { ticker: "SMCI", nom: "Super Micro", secteur: "Serveurs IA", note: "Volatil" },
     { ticker: "ANET", nom: "Arista Networks", secteur: "Réseau IA", note: "Solide" },
-    { ticker: "SPACEX", nom: "SpaceX", secteur: "Spatial", note: "IPO ciblée juin 2026 — attendre fin du lock-up (~déc. 2026)", preIPO: true, ipoDate: "2026-06", priceEstimate: { low: 145, high: 220, fairValue: 175, currency: "USD", basis: "Valo privée ~400 Md$ (tour 2025) / 5 Md actions estimées" } },
+    { ticker: "SPACEX", nom: "SpaceX", secteur: "Spatial", note: "S-1 attendu (cible IPO juin 2026) — sans dépôt public à J-6 semaines, risque de glissement Q3/Q4 2026. Stratégie : attendre fin du lock-up (~6 mois post-IPO).", preIPO: true, ipoDate: "2026-06", priceEstimate: { low: 145, high: 220, fairValue: 175, currency: "USD", basis: "Valo privée ~400 Md$ (tour 2025) / 5 Md actions estimées — à recalibrer dès sortie S-1" } },
   ];
   if (!D.watchlist.length) {
     D.watchlist = defaults.map(d => ({ id: uuid(), ...d }));
