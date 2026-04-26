@@ -1006,7 +1006,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v3.5";
+const APP_VERSION = "v3.6";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -1802,7 +1802,30 @@ function openCoachReport(idx) {
 // ============================================================================
 // SYNC GITHUB (Contents API)
 // ============================================================================
-function getToken() { return localStorage.getItem(TOKEN_KEY); }
+// Stockage redondant token : localStorage + cookie (anti-purge iOS PWA standalone)
+function setTokenPersistent(token) {
+  localStorage.setItem(TOKEN_KEY, token);
+  // Cookie 1 an, robuste aux fermetures PWA iOS
+  const oneYear = 365 * 24 * 3600;
+  document.cookie = `${TOKEN_KEY}=${encodeURIComponent(token)}; max-age=${oneYear}; path=/; SameSite=Lax; Secure`;
+}
+function getToken() {
+  // 1. localStorage (rapide)
+  let t = localStorage.getItem(TOKEN_KEY);
+  if (t) return t;
+  // 2. Fallback cookie (iOS PWA standalone parfois purge localStorage)
+  const m = document.cookie.match(new RegExp('(?:^|; )' + TOKEN_KEY + '=([^;]*)'));
+  if (m) {
+    t = decodeURIComponent(m[1]);
+    localStorage.setItem(TOKEN_KEY, t); // restore localStorage
+    return t;
+  }
+  return null;
+}
+function clearTokenPersistent() {
+  localStorage.removeItem(TOKEN_KEY);
+  document.cookie = `${TOKEN_KEY}=; max-age=0; path=/; SameSite=Lax; Secure`;
+}
 
 async function generateInstallLink() {
   const tok = getToken();
@@ -1833,7 +1856,7 @@ async function importConfigFromLink() {
     }
     const encoded = hash.slice(8);
     const tok = decodeURIComponent(escape(atob(encoded)));
-    localStorage.setItem(TOKEN_KEY, tok);
+    setTokenPersistent(tok);
     updateTokenStatus();
     toast("Token importé — synchronisation…", "success");
     await ghPullNow();
@@ -1850,7 +1873,7 @@ function checkInstallLink() {
   try {
     const tok = decodeURIComponent(escape(atob(encoded)));
     if (confirm("Importer la configuration depuis ce lien ?\n\nLe token GitHub sera enregistré et tes données seront récupérées.")) {
-      localStorage.setItem(TOKEN_KEY, tok);
+      setTokenPersistent(tok);
       // Nettoyer l'URL pour ne pas laisser le token visible
       history.replaceState(null, "", location.pathname);
       toast("Token importé — synchronisation en cours…", "success");
@@ -1874,7 +1897,7 @@ async function saveToken() {
   try {
     const r = await fetch(`https://api.github.com/repos/${GH_REPO}`, { headers: { Authorization: "Bearer " + tok }});
     if (!r.ok) throw new Error("HTTP " + r.status);
-    localStorage.setItem(TOKEN_KEY, tok);
+    setTokenPersistent(tok);
     updateTokenStatus();
     closeModal("tokenModal");
     toast("Token validé", "success");
