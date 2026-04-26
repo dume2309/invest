@@ -1011,7 +1011,7 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const APP_VERSION = "v4.5";
+const APP_VERSION = "v4.6";
 const STORAGE_KEY = "invest_v1";
 const TOKEN_KEY = "invest_gh_token";
 const GH_REPO = "dume2309/invest-data";
@@ -2723,9 +2723,10 @@ function renderNiveau() {
 // PROPOSITIONS D'ACHAT AUTO (basées sur phase, sans montant fixe)
 // ============================================================================
 
-function getPhase(totalEtfEur) {
+function getPhase(totalEtfEur, hasEtfPosition = false) {
   // Phase basée UNIQUEMENT sur le total des ETF (CW8/500/AASI), pas sur or ni actions
-  if (totalEtfEur < 100) return 0;       // démarrage
+  // Démarrage = aucune position ETF du tout. Dès le 1er achat → Phase 1.
+  if (!hasEtfPosition && totalEtfEur < 1) return 0;
   if (totalEtfEur < 1500) return 1;      // 100% CW8
   if (totalEtfEur < 5000) return 2;      // 70% CW8 + 30% 500.PA
   if (totalEtfEur < 10000) return 3;     // 60% CW8 + 25% 500.PA + 15% AASI
@@ -2754,7 +2755,8 @@ async function renderPropositions() {
       if (ETF_TICKERS.includes(p.ticker)) totalEtf += valEur;
     } catch {}
   }
-  const phase = getPhase(totalEtf);
+  const hasEtfPosition = D.positions.some(p => ETF_TICKERS.includes(p.ticker));
+  const phase = getPhase(totalEtf, hasEtfPosition);
   const total = totalAll;
 
   // Construction des propositions selon la phase (% uniquement, pas de €)
